@@ -1,0 +1,23 @@
+################################################################################
+# This is the Changelog for Open Grid Scheduler source code changes.           #
+#                                                                              #
+#                ===== PLEASE DO NOT DELETE THIS HEADER ====                   #
+################################################################################
+          1         2         3         4         5         6         7
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+RH-2011-02-25-0: CVS:         created trunk, tags, branches
+
+SD-2010-09-15-0: Bugfix:      slotwise preemption fails to unsuspend one job 
+                              per host
+                 SGE Issue:   3233
+
+RH-2010-09-09-0: Bugfix:      vmem error workaround
+
+RH-2010-08-22-0: Bugfix:      compilation error on Linux
+                 SGE Issue:   2980
+                 Ubuntu Bug:  496689
+
+-------------------------------------------------------
+
+RC-2010-08-18-0: CVS:         created from V62u5_TAG

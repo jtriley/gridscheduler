@@ -103,7 +103,7 @@ while ($i <= $#argv)
       else if ($BUILDARCH == HP1164) then
          set BUILDARCH = HP11
          set buildarch = hp11
-      else if ($BUILDARCH == LINUXMIPS64 || $BUILDARCH == LINUXPPC64) then
+      else if ($BUILDARCH == LINUXMIPS64 || $BUILDARCH == LINUXPPC64 || $BUILDARCH == LINUXS390X) then
          set FORCE_32BIT = 1
       else
          echo "32-bit switch not supported for $buildarch"
@@ -790,7 +790,7 @@ while ($#argv >= 1 && $?found)
       set MAKEWINGRIDLIB = 0
       set ONLY_PARAM_SPEC = 1
       breaksw
-   case "-only-64"
+   case "-only-64":
       set SOLARIS_ONLY_64 = 1
       breaksw
    case "-parallel":
@@ -1382,6 +1382,8 @@ case LINUXMIPS:
 case LINUXMIPS64:
 case LINUXPPC:
 case LINUXPPC64:
+case LINUXS390:
+case LINUXS390X:
 case LINUXSPARC:
 case LINUXSPARC64:
    set MAKEWINGRIDLIB   = 0
@@ -1390,11 +1392,7 @@ case LINUXSPARC64:
 
    set CFLAGS = "$CFLAGS"
 
-   if ( $BUILDARCH == LINUXSPARC ) then
-      set COMPILE_DC = 0
-   else
-      set COMPILE_DC = 1
-   endif
+   set COMPILE_DC = 1
 
    # Optimization on LINUXIA64 is broken, qmon dumps
    if ($OPTIMIZATION == 1 && $BUILDARCH != LINUXIA64) then
@@ -1416,6 +1414,10 @@ case LINUXSPARC64:
          set LFLAGS = "-m64 $LFLAGS"
          set SHARED_LFLAGS = "-m64 $SHARED_LFLAGS"
       endif
+   else if ($BUILDARCH == LINUXS390X && $FORCE_32BIT == 1) then
+      set CFLAGS = "-m31 $CFLAGS"
+      set LFLAGS = "-m31 $LFLAGS"
+      set SHARED_LFLAGS = "-m31 $SHARED_LFLAGS"
    endif
 
    if ($DEBUGGED == 1) then

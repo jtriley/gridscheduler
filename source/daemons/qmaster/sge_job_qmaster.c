@@ -943,7 +943,7 @@ void job_ja_task_send_abort_mail(const lListElem *job,
    sge_dstring_free(&body);
 }
 
-void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
+static void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
                                 lListElem *j,
                                 lListElem *t,
                                 lList **answer_list,

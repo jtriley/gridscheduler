@@ -76,10 +76,6 @@ void sge_store_job_number(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
 void job_ja_task_send_abort_mail(const lListElem *job, const lListElem *ja_task, const char *ruser,
                                  const char *rhost,  const char *err_str);
 
-void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
-                                lListElem *j, lListElem *t, lList **answer_list, const char *ruser,
-                                int force, monitoring_t *monitor);
-
 void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx, lListElem *j, lListElem *t);
 
 void sge_job_spool(sge_gdi_ctx_class_t *);

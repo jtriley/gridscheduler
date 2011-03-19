@@ -78,7 +78,7 @@ static int MatchPattern(s_token *, bool);
 static void uncaseValue(s_token *,char *);
 
 /* arrays and enums.  */
-enum { T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END, T_EXP, T_ERROR };
+enum { T_NOT = 0, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END, T_EXP, T_ERROR };
 
 /* ATTENTION! The order of TERMINALS and enumTypes have to match */
 const int eTypes[] = {T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END};
@@ -125,16 +125,20 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
    char pattern_buf[MAX_STRING_SIZE], value_buf[MAX_STRING_SIZE];
    
    DENTER(BASIS_LAYER, "sge_eval_expression");
-   
+
    /* Null values are supported in str_cmp_null way */
-   if (expr==NULL && value!=NULL) {
-      DRETURN(-1);
-   }              
-   if (expr!=NULL && value==NULL) {
-      DRETURN(1);
-   }
-   if (expr == NULL && value == NULL) {
-      DRETURN(0);
+   if (value==NULL || expr==NULL)
+   {
+     if (expr == NULL && value == NULL) { 
+        DRETURN(0);
+     }
+
+     if (value==NULL) {  /* then expr has to be non-NULL */
+        DRETURN(1);
+     }
+     else {
+        DRETURN(-1);
+     }
    }
 
    /* To long arguments */
@@ -172,13 +176,13 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
 	       * and the token must be T_END
 	       */
 	      if (token.tt != T_END) {
-            match=Error(&token, T_END);
+                match=Error(&token, T_END);
 	      } else if (token.s[0] != '\0') { /*Something is missing? */
-            match=Error(&token, token.et);
+                match=Error(&token, token.et);
 	      }
 	   } else {
-         token.pattern=(char *) token.expr;
-         match = MatchPattern(&token, false);
+               token.pattern=(char *) token.expr;
+               match = MatchPattern(&token, false);
 	   }
    }
 
@@ -267,13 +271,13 @@ static void ParseNonTerminal(s_token *token_p, bool skip)
 static int indexOfTerminal(const char c)
 {
    switch (c) {
-      case '!': return 0;
-      case '|': return 1;
-      case '&': return 2;
-      case '(': return 3;
-      case ')': return 4;
-      case ' ': return 5;
-      case '\0': return 5;
+      case '!':  return T_NOT;
+      case '|':  return T_OR;
+      case '&':  return T_AND;
+      case '(':  return T_BRACEOPEN;
+      case ')':  return T_BRACECLOSE;
+      case ' ':  return T_END;
+      case '\0': return T_END;
    }
    return -1;
 }

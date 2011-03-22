@@ -162,7 +162,7 @@ sub handle_command_param {
          $param{$key} = { %h };
       } else {
          # not list command
-         if ($key eq 'A' || $val !~ /,/) {
+         if ($key =~ /CMDARG\d+/ || $key eq 'CMDNAME' || $key eq 'A' || $key eq 'N' || $val !~ /,/) {
             # the -A option can have any content, also a comma
             $param{$key} = $val;
          } else {

@@ -657,7 +657,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 *  SYNOPSIS
 *     #include "sge_event_master.h"
 *
-*     int 
+*     static void 
 *     sge_event_master_process_mod_event_client(lListElem *clio, lList **alpp, 
 *                                               lList **eclpp, char *ruser, 
 *                                               char *rhost) 
@@ -682,7 +682,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 *     MT-NOTE: sge_mod_event_client() is NOT MT safe.
 *
 *******************************************************************************/
-void
+static void
 sge_event_master_process_mod_event_client(lListElem *request, monitoring_t *monitor)
 {
    lListElem *event_client = NULL;

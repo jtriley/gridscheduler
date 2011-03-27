@@ -1020,7 +1020,7 @@ void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
 *                   false in verify mode or not enough resources available
 *
 *  NOTES
-*     MT-NOTE: ar_reserve_queues() is not MT safe, needs GLOBAL_LOCK
+*     MT-NOTE: ar_reserve_queues() is not MT safe, needs LOCK_GLOBAL
 *******************************************************************************/
 static bool ar_reserve_queues(lList **alpp, lListElem *ar)
 {

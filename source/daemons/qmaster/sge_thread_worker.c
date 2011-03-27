@@ -249,7 +249,7 @@ sge_worker_main(void *arg)
 
       if (packet != NULL) {
          sge_gdi_task_class_t *task = packet->first_task;
-         bool is_only_read_request = true;
+         sge_lockmode_t lockmode = LOCK_READ;
 
          thread_start_stop_profiling();
 
@@ -265,7 +265,8 @@ sge_worker_main(void *arg)
 
          MONITOR_MESSAGES((&monitor));
 
-         if (packet->is_gdi_request == true) {
+         if (packet->is_gdi_request == true)
+         {
             /*
              * test if a write lock is neccessary
              */
@@ -274,23 +275,20 @@ sge_worker_main(void *arg)
                u_long32 command = SGE_GDI_GET_OPERATION(task->command); 
 
                if (command != SGE_GDI_GET) {
-                  is_only_read_request = false;
+                  lockmode = LOCK_WRITE;
                   break;
                }
                task = task->next;            
             }
          } else {
-            is_only_read_request = false;
+            lockmode = LOCK_WRITE;
          }
 
          /*
           * acquire the correct lock
           */
-         if (is_only_read_request) {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), &monitor); 
-         } else {
-            MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), &monitor);
-         }
+
+         MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, lockmode), &monitor);
 
          if (packet->is_gdi_request == true) {
             /*
@@ -311,11 +309,7 @@ sge_worker_main(void *arg)
          /*
           * do unlock
           */
-         if (is_only_read_request) {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ)
-         } else {
-            SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE)
-         }
+         SGE_UNLOCK(LOCK_GLOBAL, lockmode);
 
          if (packet->is_gdi_request == true) {
 #ifdef SEND_ANSWER_IN_LISTENER

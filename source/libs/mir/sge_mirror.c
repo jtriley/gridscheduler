@@ -1843,7 +1843,6 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr,
    DRETURN(SGE_EM_OK);
 }
 
-static sge_callback_result
 /****** sge_mirror/ar_update_master_list() *************************************
 *  NAME
 *     ar_update_master_list() -- update the master advance reservation list
@@ -1872,6 +1871,7 @@ static sge_callback_result
 *  NOTES
 *     MT-NOTE: ar_update_master_list() is not MT safe
 *******************************************************************************/
+static sge_callback_result
 ar_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge_object_type type,
                         sge_event_action action, lListElem *event, void *clientdata)
 {
@@ -1921,7 +1921,7 @@ ar_update_master_list(sge_evc_class_t *evc, object_description *object_base, sge
 *     static sge_mirror_error - SGE_EM_OK or an error code
 *
 *  NOTES
-*     MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs GLOBAL_LOCK 
+*     MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs LOCK_GLOBAL
 *******************************************************************************/
 static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
                                                         int key_nm, const char *key,

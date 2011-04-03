@@ -1091,9 +1091,8 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
       sge_signal_queue(ctx, lGetUlong(qep, QU_pending_signal), qep, NULL, NULL, monitor);
    }
 
-   sge_free((char *)queue);
-
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+   sge_free((char *)queue);
 
    DEXIT;
    return;

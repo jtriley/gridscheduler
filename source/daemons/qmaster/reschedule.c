@@ -189,9 +189,10 @@ void reschedule_unknown_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, moni
    lFreeList(&answer_list);
    
 Error:
-   free(hostname);
-   
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+
+   free(hostname);
+
    DRETURN_VOID;
 }
  

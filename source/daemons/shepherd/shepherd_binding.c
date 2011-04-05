@@ -684,7 +684,7 @@ static bool binding_set_linear_linux(int first_socket, int first_core,
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-bool binding_set_striding_linux(int first_socket, int first_core, int amount_of_cores,
+static bool binding_set_striding_linux(int first_socket, int first_core, int amount_of_cores,
                           int offset, int stepsize, const binding_type_t type)
 {
    /* n := take every n-th core */ 
@@ -1045,7 +1045,7 @@ static bool binding_explicit(const int* list_of_sockets, const int samount,
 *     MT-NOTE: create_binding_env_linux() is MT safe 
 *
 *******************************************************************************/
-bool create_binding_env_linux(const int* proc_id, const int amount)
+static bool create_binding_env_linux(const int* proc_id, const int amount)
 {
    bool retval          = true;
    dstring sge_binding  = DSTRING_INIT;

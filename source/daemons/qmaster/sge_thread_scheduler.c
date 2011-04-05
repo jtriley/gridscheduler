@@ -85,7 +85,7 @@
 #define SCHEDULER_TIMEOUT_N 0
 
 static char schedule_log_path[SGE_PATH_MAX + 1] = "";
-const char *schedule_log_file = "schedule";
+static const char schedule_log_file[] = "schedule";
 
 master_scheduler_class_t Master_Scheduler = {
    PTHREAD_MUTEX_INITIALIZER,

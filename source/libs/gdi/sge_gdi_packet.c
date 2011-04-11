@@ -800,17 +800,20 @@ bool
 sge_gdi_packet_verify_version(sge_gdi_packet_class_t * packet, lList **alpp)
 {
    bool ret = true;
-   char *client_version = NULL;
-   dstring ds;
-   char buffer[256];
-   const vdict_t *vp;
-   const vdict_t *vdict = GRM_GDI_VERSION_ARRAY;
    u_long32 version = packet->version;
 
    DENTER(TOP_LAYER, "sge_gdi_packet_verify_version");
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   if (version != GRM_GDI_VERSION) {
+   if (version != GRM_GDI_VERSION)
+   {
+      char *client_version = NULL;
+      dstring ds;
+      char buffer[256];
+      const vdict_t *vp;
+      const vdict_t *vdict = GRM_GDI_VERSION_ARRAY;
+
+      sge_dstring_init(&ds, buffer, sizeof(buffer));
+
       for (vp = &vdict[0]; vp->version; vp++) {
          if (version == vp->version) {
             client_version = vp->release;

@@ -421,55 +421,6 @@ int get_amount_of_sockets()
    return 0;
 }
 
-/****** sge_binding_hlp/get_processor_id() *****************************************
-*  NAME
-*     get_processor_id() -- Converts a logical socket and core number into a Linux internal. 
-*
-*  SYNOPSIS
-*     int get_processor_id(int socket_number, int core_number) 
-*
-*  FUNCTION
-*     Converts a logical socket and core number (this is beginning at 0 and 
-*     without holes) into the Linux internal processor number.  
-*
-*  INPUTS
-*     int socket_number - Socket (starting at 0) to search for core. 
-*     int core_number   - Core number (starting at 0) to get id for. 
-*
-*  RESULT
-*     int - Linux internal processor number or negative number on error. 
-*
-*  NOTES
-*     MT-NOTE: get_processor_id() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-int get_processor_id(int socket_number, int core_number) 
-{
-    
-   if (has_core_binding() && _has_topology_information()) {
-      int proc_id = -1;
-      int socket_id = -1;
-
-      if (plpa_get_socket_id(socket_number, &socket_id) != 0) {
-         /* unable to retrieve Linux logical socket id */
-         return -3;
-      }
-
-      if (plpa_map_to_processor_id(socket_id, core_number, &proc_id) == 0) {
-         /* everything OK: processor id was set */
-         return proc_id;
-      } else {
-         /* processor id couldn't retrieved */
-         return -2; 
-      }
-   } 
-   /* no support for this topology related call */
-  return -1;
-
-}
-
 /****** sge_binding_hlp/get_processor_ids_linux() ******************************
 *  NAME
 *     get_processor_ids_linux() -- Get internal processor ids for a specific core.

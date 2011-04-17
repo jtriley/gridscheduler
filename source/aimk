@@ -57,6 +57,7 @@ set ERR_WARN_NONE = ""
 set ERR_WARN_ALL = ""
 set UNMODIFIED_ARGUMENTS = ( $argv )
 set FORCE_32BIT = 0
+set WERR        = 0
 
 if ( -f dist/util/arch ) then
    set buildarch = `dist/util/arch`
@@ -215,6 +216,7 @@ usage:
    echo "-sunman           -> create man pages for Sun branded man pages (with -man[kv])"
    echo "-tight-ssh        -> compile SSH daemon with tight SGE integration"
    echo "-umap             -> compile with usermapping and hostgroup feature"
+   echo "-werror           -> turn all compiler warnings into errors"
    echo "-with-jemalloc    -> build SGE with the jemalloc library"
   exit
 }
@@ -895,6 +897,9 @@ while ($#argv >= 1 && $?found)
    case "-tight-ssh":
       set SGESSH = 1
       breaksw
+   case "-werror":
+      set WERR = 1
+      breaksw
    case  "-with-jemalloc"
       set MAKEJEMALLOCLIB = 1
       breaksw
@@ -1010,6 +1015,10 @@ case AIX51:
    set XLFLAGS  = "$XLIBD"
    set XLIBS    = "-lXm  -lXt -lXext -lX11 -lm -liconv -lc"
 
+   if ("$WERR" == 1) then
+      set CFLAGS = "$CFLAGS -qhalt=w"
+   endif
+
    set SHAREDLD = "$SOURCE/scripts/ldAix"
    set SHARED_CFLAGS = ""
    set SHARED_LFLAGS = "$LFLAGS $KLFLAGS -brtl -bhalt:4 -bM:SRE -bE:lib.exp -H512 -T512 -bnoentry"
@@ -1097,16 +1106,16 @@ case DARWIN_PPC:
    set REL = `/usr/bin/uname -r`
    switch ($REL)
    case "6.*":
-      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Werror -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN6 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
+      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN6 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
       breaksw
    case "7.*":
-      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Werror -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN7 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
+      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN7 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
       breaksw
    case "8.*":
-      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Werror -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN8 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
+      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN8 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
       breaksw
    case "9.*":
-      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Werror -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN9 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
+      set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -Wall -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN9 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
       breaksw
    case "10.*":
       set CFLAGS = "$OFLAG -no-cpp-precomp -flat_namespace -arch i386 -Wall -Wno-format -Wstrict-prototypes -DFD_SETSIZE=8192 -DDARWIN -DDARWIN10 -D$BUILDARCH -DGETHOSTBYNAME -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS"
@@ -1118,6 +1127,10 @@ case DARWIN_PPC:
       exit 1
       breaksw
    endsw
+
+   if ("$WERR" == 1) then
+      set CFLAGS = "$CFLAGS -Werror"
+   endif
 
    set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
    set LFLAGS   = "$DEBUG_FLAG $LFLAGS"
@@ -1448,7 +1461,11 @@ case LINUXSPARC64:
       set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
    endif
 
-   set CFLAGS = "$OFLAG -Wall -Werror -Wstrict-prototypes -DUSE_POLL -DLINUX -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 $DEBUG_FLAG $CFLAGS"
+   set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 $DEBUG_FLAG $CFLAGS"
+
+   if ("$WERR" == 1) then
+      set CFLAGS = "$CFLAGS -Werror"
+   endif
 
    if ("$ADOC" == 1) then
       set CFLAGS = "$CFLAGS -Wno-error"
@@ -1588,8 +1605,12 @@ case WIN32_X86:
          set CFLAGS = "-DINTERIX -DINTERIX52 $CFLAGS"
       endif
       set CFLAGS = "-D$COMPILE_ARCH -DGETHOSTBYNAME_M -DUSE_SGE_UNSETENV $CFLAGS" 
-      set CFLAGS = "-Wall -Werror -O0 -pipe $CFLAGS -rpath /usr/lib/x86"
+      set CFLAGS = "-Wall -O0 -pipe $CFLAGS -rpath /usr/lib/x86"
       #set LFLAGS = "-Wl,-EL,-b=pe-i1386 $LFLAGS"
+
+      if ("$WERR" == 1) then
+        set CFLAGS = "$CFLAGS -Werror"
+      endif
    else
       set CC  = cc
       set CXX = cc
@@ -1846,6 +1867,10 @@ case SOLARISAMD64:
       set CFLAGS = "-Wall -Wstrict-prototypes $CFLAGS"
       set SHARED_CFLAGS = "-fPIC"
       set SHARED_LFLAGS = "$SHARED_LFLAGS -L. -shared"
+
+      if ("$WERR" == 1) then
+        set CFLAGS = "$CFLAGS -Werror"
+      endif
 
       if ( $BUILDARCH == SOLARIS64 ) then
          set CFLAGS = "-m64 $CFLAGS"

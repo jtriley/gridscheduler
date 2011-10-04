@@ -171,12 +171,13 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
 
       pid = waitpid(-1, &status, WNOHANG);
 
-      if (pid == 0) {
+      if (pid == 0)
+      {
          DPRINTF(("pid==0 - no stopped or exited children\n"));
          break;
       }
-
-      if (pid == -1) {
+      else if (pid == -1)
+      {
          DPRINTF(("pid==-1 - no children not previously waited for\n"));
          break;
       }
@@ -1520,43 +1521,40 @@ static void update_used_cores(const char* path_to_config, lListElem** jr)
   
    DPRINTF(("update used cores: %s\n", path_to_config));
 
-   if (!read_config(path_to_config)) {
-
+   if (!read_config(path_to_config))
+   {
       binding_cfg = get_conf_val("binding");
 
-      if (binding_cfg == NULL) {
+      if (binding_cfg == NULL)
+      {
          DPRINTF(("couldn't get binding element from config file!\n"));
-      } else {
-
+      }
+      else
+      {
          DPRINTF(("BINDING bindingcfg %s\n", binding_cfg));
 
-         if (binding_cfg != NULL) {
-            /* extract the job binding string and account it */
-            const char* jobtopo = binding_get_topology_for_job(binding_cfg);
+         /* extract the job binding string and account it */
+         const char* jobtopo = binding_get_topology_for_job(binding_cfg);
          
-            if (jobtopo != NULL) {
-               /* usage in job report */
-               dstring pseudo_usage = DSTRING_INIT; 
+         if (jobtopo != NULL)
+         {
+            /* usage in job report */
+            dstring pseudo_usage = DSTRING_INIT; 
 
-               /* account the used cores on execd global */
-               DPRINTF(("account cores used by job: %s\n", jobtopo));
-               account_job(jobtopo);
+            /* account the used cores on execd global */
+            DPRINTF(("account cores used by job: %s\n", jobtopo));
+            account_job(jobtopo);
 
-               /* add to job report (for qstat -j x -cb) */
-               sge_dstring_sprintf(&pseudo_usage, "binding_inuse=%s", jobtopo); 
+            /* add to job report (for qstat -j x -cb) */
+            sge_dstring_sprintf(&pseudo_usage, "binding_inuse=%s", jobtopo); 
                
-               add_usage(*jr, sge_dstring_get_string(&pseudo_usage), NULL, 0);
-               sge_dstring_free(&pseudo_usage); 
+            add_usage(*jr, sge_dstring_get_string(&pseudo_usage), NULL, 0);
+            sge_dstring_free(&pseudo_usage); 
 
-            } else {
-               DPRINTF(("topology not found\n"));
-            }   
          } else {
-            DPRINTF(("binding_cfg is NULL\n"));
+            DPRINTF(("topology not found\n"));
          }
-      
       } /* binding_cfg found */
-
    } else {
       DPRINTF(("couldnt read config in\n"));
    }
@@ -1576,17 +1574,16 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
 {
    char pid_file[SGE_PATH_MAX];
    FILE *fp;
-   u_long32 pid;
 
    DENTER(TOP_LAYER, "read_dusage");
-
-   pid = 0xffffffff;
 
    sprintf(pid_file, "%s/pid", jobdir);
 
    if (failed != ESSTATE_NO_PID) {
       fp = fopen(pid_file, "r");
-      if (fp) {
+      if (fp)
+      {
+         u_long32 pid = 0xffffffff;
          fscanf(fp, sge_u32 , &pid);
          FCLOSE(fp);
       } else {
@@ -2261,5 +2258,4 @@ static void clean_up_binding(char* binding)
 
    DRETURN_VOID;
 }
-
 

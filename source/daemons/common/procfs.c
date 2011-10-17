@@ -801,15 +801,15 @@ time_t last_time
       if (SGE_STAT(procnam, &fst) == 0) {
          {
          /*if (fst.st_mtime > last_time) {*/
-            FILE *fd;
-            if ((fd = fopen(procnam, "r"))) {
+            FILE *fp;
+            if ((fp = fopen(procnam, "r"))) {
                char buf[1024];
             
                /*
                 * Trying to parse /proc/<pid>/io
                 */
 
-               while (fgets(buf, sizeof(buf), fd))
+               while (fgets(buf, sizeof(buf), fp))
                {
                  char *label = strtok(buf, " \t\n");
                  char *token = strtok((char*) NULL, " \t\n");
@@ -824,7 +824,7 @@ time_t last_time
                    }
                } /* while */
 
-               fclose(fd);
+               fclose(fp);
                lSetPosUlong(pr, pos_io, new_iochars);
             }
          }

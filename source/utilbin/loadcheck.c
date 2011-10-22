@@ -349,7 +349,7 @@ void test_linux_plpa()
    }
 
    if (!_has_topology_information()) {
-      printf("No topology information could by retrieved by PLPA!\n");
+      printf("No topology information could be retrieved by PLPA!\n");
    } else {
       /* get amount of sockets */
       printf("Amount of sockets:\t\t%d\n", get_amount_of_sockets());

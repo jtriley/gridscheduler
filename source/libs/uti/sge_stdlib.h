@@ -55,9 +55,9 @@
 *     uti/stdlib/sge_free()
 ******************************************************************************/
 #define FREE(x) \
-   {               \
-      free(x);     \
-      x = NULL;    \
+   {                   \
+      free((char *)x); \
+      x = NULL;        \
    }
 
 char *sge_malloc(int size);

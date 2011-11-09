@@ -114,14 +114,6 @@ typedef struct lnk_link_s {
 #define LNK_DATA(link, entry_type, link_field)  \
     ((entry_type *)((char *)(link) - offsetof(entry_type, link_field)))
 
-#if 0
-#define LNK_INIT(link)                          \
-(                                               \
-    (link)->next = (link),                      \
-    (link)->prev = (link),                      \
-    (link)                                      \
-)
-#endif
 #define LNK_INIT(link)                          \
 (                                               \
     (link)->next = (link),                      \
@@ -185,10 +177,6 @@ typedef struct {
 } proc_elem_t;
 
 extern long pagesize;
-
-#if defined(LINUX)
-   int sup_groups_in_proc(void);
-#endif
 
 #if defined(ALPHA) || defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(DARWIN)
    void pdc_kill_addgrpid(gid_t, int, tShepherd_trace);

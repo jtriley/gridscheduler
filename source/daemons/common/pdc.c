@@ -213,19 +213,9 @@ long pagesize;           /* size of a page of memory (probably 8k) */
 int physical_memory;     /* size of real mem in KB                 */
 char unixname[128];      /* the name of the booted kernel          */
 
-#if defined(LINUX)
-int sup_grp_in_proc;
-#endif
-
 #define INCPTR(type, ptr, nbyte) ptr = (type *)((char *)ptr + nbyte)
 #define INCJOBPTR(ptr, nbyte) INCPTR(struct psJob_s, ptr, nbyte)
 #define INCPROCPTR(ptr, nbyte) INCPTR(struct psProc_s, ptr, nbyte)
-
-#if defined(LINUX)
-   int sup_groups_in_proc (void) {
-      return(sup_grp_in_proc);
-   }
-#endif
 
 #if defined(LINUX) || defined(SOLARIS) || defined(ALPHA) || defined(FREEBSD) || defined(DARWIN)
 
@@ -864,20 +854,6 @@ static struct {
 } base;
 #endif
 #endif
-
-void
-psSetCollectionIntervals(int jobi, int prci, int sysi)
-{
-   if (jobi != -1)
-      ps_config.job_collection_interval = jobi;
-
-   if (prci != -1)
-      ps_config.prc_collection_interval = prci;
-
-   if (sysi != -1)
-      ps_config.sys_collection_interval = sysi;
-}
-
 
 #ifdef PDC_STANDALONE
 int psRetrieveSystemData(void)
@@ -2506,16 +2482,8 @@ int psStartCollector(void)
 
    initialized = 1;
 
-#if defined(LINUX)
-   /* 
-    * supplementary groups in proc filesystem? 
-    */
-   sup_grp_in_proc = groups_in_proc();
-#endif
-
    LNK_INIT(&job_list);
    start_time = get_gmt();
-
 
 #ifdef PDC_STANDALONE
    /* Length of struct (set@run-time) */
@@ -2961,9 +2929,19 @@ print_status(psStat_t *stat)
    printf("stat_jobcount=%d\n", (int)stat->stat_jobcount);
 }
 
+static void psSetCollectionIntervals(int jobi, int prci, int sysi)
+{
+   if (jobi != -1)
+      ps_config.job_collection_interval = jobi;
 
-int
-main(int argc, char **argv)
+   if (prci != -1)
+      ps_config.prc_collection_interval = prci;
+
+   if (sysi != -1)
+      ps_config.sys_collection_interval = sysi;
+}
+
+int main(int argc, char *argv[])
 {
    char sgeview_bar_title[256] = "";  
    char sgeview_window_title[256] = ""; 

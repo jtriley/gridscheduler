@@ -891,11 +891,13 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeDeleteJobTempla
    
    pthread_mutex_lock(&list_mutex);
       
-   if ((job_templates != NULL) && (id < list_length)) {
+   if ((job_templates != NULL) && (id < list_length))
+   {
       jt = job_templates[id];
    }
    
-   if (jt != NULL) {
+   if (jt != NULL)
+   {
       errnum = drmaa_delete_job_template (jt, error, DRMAA_ERROR_STRING_BUFFER);
       
       if (errnum != DRMAAJ_ERRNO_SUCCESS) {
@@ -910,7 +912,8 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeDeleteJobTempla
    
       pthread_mutex_unlock(&list_mutex);
    }
-   else {   
+   else
+   {   
       pthread_mutex_unlock(&list_mutex);
       
       print_message_and_throw_exception (env, DRMAAJ_ERRNO_INVALID_JOB_TEMPLATE,
@@ -923,16 +926,19 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeDeleteJobTempla
 static void print_message_and_throw_exception(JNIEnv *env, int errnum,
                                               const char *format, ...)
 {
-   char message[MAX_STRING_SIZE + 1];
-   va_list ap;
+   if (format != NULL)
+   {
+      va_list ap;
+      char message[MAX_STRING_SIZE + 1];
 
-   va_start(ap, format);
-
-   if (format != NULL) {
+      va_start(ap, format);
       vsnprintf(message, MAX_STRING_SIZE, format, ap);
+      va_end(ap);
+
       throw_exception (env, errnum, message);
    }
-   else {
+   else
+   {
       throw_exception (env, errnum, NULL);
    }
 }
@@ -940,22 +946,20 @@ static void print_message_and_throw_exception(JNIEnv *env, int errnum,
 static void throw_exception(JNIEnv *env, int errnum, const char *message)
 {
    const char *error = message;
-   jclass newExcCls = NULL;
+   jclass newExcCls;
 
-   if (error == NULL) {
+   if (error == NULL)
       error = drmaa_strerror(errnum);
-   }
 
    newExcCls = get_exception_class(env, errnum, error);
 
-   if (newExcCls != NULL) {
+   if (newExcCls != NULL)
       (*env)->ThrowNew(env, newExcCls, error);
-   }
 }
 
 static jclass get_exception_class(JNIEnv *env, int errnum, const char *message)
 {
-   jclass newExcCls = NULL;
+   jclass newExcCls;
 
    newExcCls = (*env)->FindClass(env, get_exception_class_name(errnum));
 
@@ -1052,13 +1056,14 @@ static char *get_exception_class_name (int errnum)
 static int insert_into_list (drmaa_job_template_t *jt)
 {
    int count = 0;
-   drmaa_job_template_t **tmp_list = NULL;
+   drmaa_job_template_t **tmp_list, **tmp_list2;
    int tmp_length = 0;
    
    pthread_mutex_lock(&list_mutex);
 
    /* If we haven't initialized the template list yet, do so. */
-   if (job_templates == NULL) {
+   if (job_templates == NULL)
+   {
       list_length = TEMPLATE_LIST_LENGTH;
       job_templates = (drmaa_job_template_t **)malloc
                                 (sizeof (drmaa_job_template_t *) * list_length);
@@ -1066,8 +1071,10 @@ static int insert_into_list (drmaa_job_template_t *jt)
    }
 
    /* Search for an empty slot. */
-   for (count = 0; count < list_length; count++) {
-      if (job_templates[count] == NULL) {
+   for (count = 0; count < list_length; count++)
+   {
+      if (job_templates[count] == NULL)
+      {
          /* Insert the template and return the index. */
          job_templates[count] = jt;
    
@@ -1079,20 +1086,22 @@ static int insert_into_list (drmaa_job_template_t *jt)
 
    /* If there are no empty slots, double the size of the list. */
    tmp_length = list_length * 2;
-   tmp_list = (drmaa_job_template_t **)malloc (sizeof(drmaa_job_template_t *) *
-                                               tmp_length);
-   memcpy (tmp_list, job_templates, list_length *
-                                               sizeof (drmaa_job_template_t *));
-   memset (&tmp_list[count], 0, list_length * sizeof (drmaa_job_template_t *));
+   tmp_list = malloc (sizeof(drmaa_job_template_t *) * tmp_length);
+
+   memcpy(tmp_list, job_templates, list_length * sizeof (drmaa_job_template_t *));
+   memset(&tmp_list[count], 0, list_length * sizeof (drmaa_job_template_t *));
    
    list_length = tmp_length;
-   free (job_templates);
+
+   tmp_list2 = job_templates;
    job_templates = tmp_list;
    
    /* Insert the template and return the index. */
    job_templates[count] = jt;
    
    pthread_mutex_unlock(&list_mutex);
+
+   free(tmp_list2);
    
    return count;
 }
@@ -1101,12 +1110,12 @@ static drmaa_job_template_t *get_from_list (int id)
 {
    drmaa_job_template_t *retval = NULL;
    
-   if (id >= 0) {
+   if (id >= 0)
+   {
       pthread_mutex_lock(&list_mutex);
 
-      if ((job_templates != NULL) && (id < list_length)) {
+      if ((job_templates != NULL) && (id < list_length))
          retval = job_templates[id];
-      }
 
       pthread_mutex_unlock(&list_mutex);
    }

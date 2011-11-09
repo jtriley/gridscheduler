@@ -136,7 +136,7 @@
 #  include <sys/sysinfo.h>
 #  include <nlist.h>
 
-#if defined(HAS_AIX5_PERFLIB)
+#if defined(HAS_AIX_PERFLIB)
 #  include <sys/proc.h>
 #  include <libperfstat.h>
 #endif
@@ -159,8 +159,8 @@
 #  endif
 #elif defined(LINUX)
 #  define LINUX_LOAD_SOURCE "/proc/loadavg"
+#  define LINUX_KERNEL_STAT "/proc/stat"
 #  define CPUSTATES 4
-#  define PROCFS "/proc" 
 #elif defined(ALPHA4) || defined(ALPHA5)
 #  define MP_KERNADDR 8
 #  define MPKA_AVENRUN 19
@@ -201,18 +201,8 @@ typedef int kernel_fd_type;
 static long percentages(int cnt, double *out, long *new, long *old, long *diffs);
 #endif
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(HPUX) || defined(IRIX) || defined(LINUX) || defined(DARWIN) || defined(HAS_AIX5_PERFLIB)
-
-#ifndef DARWIN
-static int get_load_avg(double loadv[], int nelem);    
-#endif
-
+#if defined(ALPHA4) || defined(ALPHA5) || defined(HPUX) || defined(IRIX) || defined(LINUX) || defined(DARWIN) || defined(HAS_AIX_PERFLIB)
 static double get_cpu_load(void);    
-
-#endif
-
-#if defined(LINUX)
-static char* skip_token(char *p); 
 #endif
 
 #if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(FREEBSD)
@@ -229,15 +219,13 @@ static int getkval(unsigned long offset, int *ptr, int size, char *refstr);
 static kernel_fd_type kernel_fd;
 #endif
 
+#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(FREEBSD)
+
 /* MT-NOTE: code basing on kernel_initialized global variable needs not to be MT safe */
 static int kernel_initialized = 0;
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HP10) || defined(FREEBSD)
-
-static int sge_get_kernel_address(
-char *name,
-long *address 
-) {
+static int sge_get_kernel_address(char *name, long *address)
+{
    int ret = 0;
 
    DENTER(TOP_LAYER, "sge_get_kernel_address");
@@ -282,9 +270,8 @@ long *address
 }    
 
 
-static int sge_get_kernel_fd(
-kernel_fd_type *fd 
-) {
+static int sge_get_kernel_fd(kernel_fd_type *fd)
+{
 #if !(defined(IRIX) || defined(HP10) || defined(ALPHA4) || defined(ALPHA5) || defined(AIX51))
    char prefix[256] = "my_error:";
 #endif   
@@ -312,12 +299,8 @@ kernel_fd_type *fd
    return kernel_initialized;
 }
 
-static int getkval(
-unsigned long offset, 
-int *ptr, 
-int size, 
-char *refstr 
-) {
+static int getkval(unsigned long offset, int *ptr, int size, char *refstr)
+{
    kernel_fd_type kernel_fd;
 
 #if defined(FREEBSD)
@@ -573,54 +556,41 @@ double get_cpu_load(void) {
 }
 #elif defined(LINUX)
 
-static char* skip_token(char *p) {
-   while (isspace(*p)) {
-      p++;
-   }
-   while (*p && !isspace(*p)) {
-      p++;
-   }
-   return p;
-}
-
-static double get_cpu_load()
+static double get_cpu_load(void)
 {
-   int fd = -1;
-   int len, i;
-   char buffer[4096];
-   char filename[4096];
-   char *p;
    double cpu_load;
-   static long cpu_new[CPUSTATES];
-   static long cpu_old[CPUSTATES];
-   static long cpu_diff[CPUSTATES];
+   long cpu_new[CPUSTATES];
+   static long cpu_old[CPUSTATES], cpu_diff[CPUSTATES];
    static double cpu_states[CPUSTATES];
+   char buffer[1024];
+   FILE *fp;
 
-   sprintf(filename, "%s/stat", PROCFS);
-   fd = open(filename, O_RDONLY);
-   if (fd == -1) {
+   fp = fopen(LINUX_KERNEL_STAT, "r");
+   if (fp == NULL)
       return -1;
-   }
-   len = read(fd, buffer, sizeof(buffer)-1);
-   close(fd);
-   buffer[len] = '\0';
-   p=skip_token(buffer);
-   for (i=0; i<CPUSTATES; i++) {
-      cpu_new[i] = strtoul(p, &p, 10);
-   }
+
+   if (fgets(buffer, sizeof(buffer), fp) == NULL)
+      return -1;
+
+   fclose(fp);
+
+   if (sscanf(buffer, "%*s %ld %ld %ld %ld", &cpu_new[0], &cpu_new[1], &cpu_new[2], &cpu_new[3]) != CPUSTATES)
+      return -1;
+
    percentages(CPUSTATES, cpu_states, cpu_new, cpu_old, cpu_diff);
 
    cpu_load = cpu_states[0] + cpu_states[1] + cpu_states[2];
 
-   if (cpu_load < 0.0) {
+   if (cpu_load < 0.0)
       cpu_load = -1.0;
-   }
+
    return cpu_load;
-}                  
+}
 
 #elif defined(ALPHA4) || defined(ALPHA5)
 
-double get_cpu_load() {
+double get_cpu_load(void)
+{
    static long cpu_old_ticks[CPUSTATES];
    long cpu_new_ticks[CPUSTATES];
    long cpu_diff_ticks[CPUSTATES];
@@ -969,7 +939,7 @@ int nelem
    }
 }
 
-#elif defined(HAS_AIX5_PERFLIB)
+#elif defined(HAS_AIX_PERFLIB)
 
 static int get_load_avg(double loadv[], int nelem)
 {
@@ -984,7 +954,7 @@ static int get_load_avg(double loadv[], int nelem)
    return 0;
 }
 
-#elif defined(LINUX)
+#elif defined(OGLIBC_LINUX)
 
 static int get_load_avg(
 double loadv[],
@@ -1201,33 +1171,20 @@ int nelem
 #endif 
 
 
-int get_channel_fd()
-{
-   if (kernel_initialized) {
-#if defined(SOLARIS) || defined(LINUX) || defined(HP11) || defined(HP1164) || defined(FREEBSD)
-      return -1;
-#else
-      return kernel_fd;
-#endif
-   } else {
-      return -1;
-   }
-}    
-
 int sge_getloadavg(double loadavg[], int nelem)
 {
    int   elem = 0;   
 
-#if defined(SOLARIS) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
-   elem = getloadavg(loadavg, nelem); /* <== library function */
-#elif defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5) || defined(LINUX) || defined(HAS_AIX5_PERFLIB)
-   elem = get_load_avg(loadavg, nelem); 
+#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5) || defined(OGLIBC_LINUX) || defined(HAS_AIX_PERFLIB)
+   elem = get_load_avg(loadavg, nelem);
+#elif defined(SOLARIS) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN) || defined(LINUX)
+   elem = getloadavg(loadavg, nelem);  /* <== library function */
 #else
    elem = -2;
 #endif
-   if (elem >= 0) {
-      elem = nelem;  
-   }
+   if (elem >= 0)
+      elem = nelem;
+
    return elem;
 }
 
@@ -1244,7 +1201,7 @@ int sge_getloadavg(double loadavg[], int nelem)
 *     Retrieve cpu utilization percentage (load value "cpu")
 *
 *  INPUTS
-*     double *cpu_load - caller passes adr of double variable 
+*     double *cpu_load - caller passes addr of double variable 
 *                        for cpu load
 *
 *  RESULT
@@ -1259,9 +1216,12 @@ int sge_getcpuload(double *cpu_load)
 
    DENTER(TOP_LAYER, "sge_getcpuload");
 
-   if ((load = get_cpu_load()) < 0.0) {
+   if ((load = get_cpu_load()) < 0.0)
+   {
       ret = -1;
-   } else {
+   }
+   else
+   {
       *cpu_load = load;
       ret = 0;
    }
@@ -1283,9 +1243,12 @@ static long percentages(int cnt, double *out, long *new, long *old, long *diffs)
    /* initialization */
    total_change = 0;
    dp = diffs;
+
    /* calculate changes for each state and the overall change */
-   for (i = 0; i < cnt; i++) {
-      if ((change = *new - *old) < 0) {
+   for (i = 0; i < cnt; i++)
+   {
+      if ((change = *new - *old) < 0)
+      {
          /* this only happens when the counter wraps */
          change = (int)
          ((unsigned long)*new-(unsigned long)*old);
@@ -1310,7 +1273,7 @@ static long percentages(int cnt, double *out, long *new, long *old, long *diffs)
 
    DEXIT;
    return total_change;
-}       
+}
 
 #endif
 

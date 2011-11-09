@@ -63,7 +63,7 @@ pid_t wait3(int *, int, struct rusage *);
 #endif
 
 static void sge_send_mail(u_long32 progid,
-                          const char *mailer, int mailer_has_subj_line, 
+                          char *mailer, int mailer_has_subj_line, 
                           const char *user, const char *host, const char *subj,
                           const char *buf);
 
@@ -120,11 +120,26 @@ void cull_mail(u_long32 progid, lList *user_list, const char *subj, const char *
    DRETURN_VOID;
 }
 
+static char *parse_script_params(char **script_file)
+{
+   char *target_user = NULL, *s;
+
+   /* syntax is [<user>@]<path> <arguments> */
+   s = strpbrk(*script_file, "@ ");
+   if (s && *s == '@') {
+      *s = '\0';
+      target_user = *script_file;
+      *script_file = &s[1];
+   }
+   return target_user;
+}
+
+
 /************************************************************/
 
 static void sge_send_mail(
 u_long32 progid,
-const char *mailer,
+char *mailer,
 int mailer_has_subj_line,
 const char *user,
 const char *host,
@@ -215,6 +230,18 @@ const char *buf
       }
 
       close(pipefds[1]);
+
+      /* switch user */
+      {
+        char *user = parse_script_params(&mailer);
+
+        if (user != NULL)
+        {
+           char err_str[256];
+
+           sge_set_uid_gid_addgrp(user, NULL, 0, 0, 0, err_str, 0, 0);
+        } 
+      }
 
       if (mailer_has_subj_line) {
          DPRINTF(("%s mail -s %s %s", mailer, subj, user_str));  

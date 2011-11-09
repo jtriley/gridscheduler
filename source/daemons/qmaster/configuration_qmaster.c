@@ -237,6 +237,7 @@ sge_del_configuration(sge_gdi_ctx_class_t *ctx,
       if (conf_obj != NULL) {
          DPRINTF(("using hostname stored in configuration object\n"));
          strcpy(unique_name, lGetHost(conf_obj, CONF_name));
+         lFreeElem(&conf_obj);
       } else {
          ERROR((SGE_EVENT, MSG_SGETEXT_CANT_DEL_CONFIG2_S, tmp_name));
          answer_list_add(anAnswer, SGE_EVENT,
@@ -539,7 +540,7 @@ static int check_config(lList **alpp, lListElem *conf)
          if (!ok) {
             DRETURN(STATUS_EEXIST);
          }
-      } else if (!strcmp(name, "prolog") || !strcmp(name, "epilog")) {
+      } else if (!strcmp(name, "prolog") || !strcmp(name, "epilog") || !strcmp(name, "mailer")) {
          if (strcasecmp(value, "none")) {
             const char *t, *script = value;
 

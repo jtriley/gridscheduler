@@ -91,7 +91,7 @@ int admail_states[MAX_SSTATE + 1] = {
 /* 35 SSTATE_HELPER_SERVICE_BEFORE_JOB */ 0,
 /* 36 SSTATE_CHECK_DAEMON_CONFIG */   0 };
 
-u_long32 admail_times[MAX_SSTATE + 1];
+static u_long32 admail_times[MAX_SSTATE + 1];
 
 /*
 ** this functions reports job failures to the admin
@@ -100,7 +100,6 @@ u_long32 admail_times[MAX_SSTATE + 1];
 */
 void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const char *job_owner)
 {
-   static int first = 1;
    char sge_mail_subj[1024];
    char sge_mail_body[2048];
    char sge_mail_start[128];
@@ -131,12 +130,6 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    DENTER(TOP_LAYER, "job_related_adminmail");
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
-
-   DPRINTF(("sizeof(admail_times) : %d\n", sizeof(admail_times)));
-   if (first) {
-      memset(admail_times, sizeof(admail_times), 0);
-      first = 0;
-   }
 
    administrator_mail = mconf_get_administrator_mail();
 
@@ -284,8 +277,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       /*
       ** allocate enough space for trace and error file
       */
-      sge_mail_body_total = (char*) malloc(sizeof(char) * 
-                                           sge_mail_body_total_size); 
+      sge_mail_body_total = malloc(sizeof(char) * sge_mail_body_total_size);
       
       strcpy(sge_mail_body_total, sge_mail_body);
 
@@ -309,8 +301,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       cull_mail(progid, lp_mail, sge_mail_subj, sge_mail_body_total, 
                 MSG_MAIL_TYPE_ADMIN);
 
-      if (sge_mail_body_total)
-         free((char*)sge_mail_body_total);
+      free(sge_mail_body_total);
    }
    lFreeList(&lp_mail);
    FREE(administrator_mail); 
@@ -332,8 +323,9 @@ int state
    /*
    ** let 0 be a reset all
    */
-   if (!state) {
-      memset(admail_times, sizeof(admail_times), 0);
+   if (!state)
+   {
+      memset(admail_times, 0, sizeof(admail_times));
       return 0;
    }
 

@@ -6,6 +6,13 @@
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
 
+RH-2011-11-08-1: Enhancem.    - aimk
+                               o stackprotect 
+                               o proper freetype include
+                               o changes for hwloc
+                               o changes for ARM Linux
+                               o arch string rework (lx -> linux, amd64 -> x64)
+
 RH-2011-11-08-0: Enhancem.    - deleted  gmake 3.78.1
                               - imported gmake 3.82
 

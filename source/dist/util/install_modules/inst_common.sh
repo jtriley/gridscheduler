@@ -52,7 +52,7 @@ BasicSettings()
 
   # library path setting required only for architectures where RUNPATH is not supported
   case $SGE_ARCH in
-#ENFORCE_SHLIBPATH#sol*|lx*)
+#ENFORCE_SHLIBPATH#sol*|linux*)
 #ENFORCE_SHLIBPATH#  ;;
   *)
     shlib_path_name=`util/arch -lib`
@@ -494,7 +494,7 @@ ErrUsage()
 {
    myname=`basename $0`
    $INFOTEXT -e \
-             "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-db|-udb|-bup|-rst| \n" \
+             "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-bup|-rst| \n" \
              "       -copycerts <host|hostlist>|-v|-upd|-upd-execd|-upd-rc|-upd-win| \n" \
              "       -post_upd|-start-all|-rccreate|[-host <hostname>] [-resport] [-rsh] \n" \
              "       [-auto <filename>] [-nr] [-winupdate] [-winsvc] [-uwinsvc] [-csp] \n" \
@@ -506,8 +506,6 @@ ErrUsage()
              "   -sm        install shadow host\n" \
              "   -usm       uninstall shadow host\n" \
              "   -s         install submit host(s)\n" \
-             "   -db        install Berkeley DB on seperated spooling server\n" \
-             "   -udb       uninstall Berkeley DB RPC spooling server\n" \
              "   -bup       backup of your configuration\n" \
              "   -rst       restore configuration from backup\n" \
              "   -copycerts copy local certificates to given hosts\n" \
@@ -532,7 +530,7 @@ ErrUsage()
              "   -uwinsvc   uninstall windows helper service\n" \
              "   -csp       install system with security framework protocol\n" \
              "              functionality\n" \
-             "   -jmx       install qmaster with JMX server thread enabled (default)\n" \
+             "   -jmx       install qmaster with JMX server thread enabled\n" \
              "   -add-jmx   install and enable JMX server thread for existing qmaster\n" \
              "   -oldijs    configure old interactive job support\n" \
              "   -afs       install system with AFS functionality\n" \
@@ -552,7 +550,6 @@ ErrUsage()
              "   inst_sge -ux -host hostname\n" \
              "                     Uninstalls execd on given execution host\n" \
              "   inst_sge -ux all  Uninstalls all registered execution hosts\n" \
-             "   inst_sge -db      Install a Berkeley DB Server on local host\n" \
              "   inst_sge -sm      Install a Shadow Master Host on local host\n" \
              "   inst_sge -copycerts host or inst_sge -copycerts \"host1 host2\"\n" $myname
 
@@ -2524,7 +2521,7 @@ InstallRcScript()
       # we already installed the script in level 3
       SGE_ARCH=`$SGE_UTIL/arch`
       case $SGE_ARCH in
-      lx2?-*)
+      linux-*)
          runlevel=`grep "^id:.:initdefault:"  /etc/inittab | cut -f2 -d:`
          if [ "$runlevel" = 2 -o  "$runlevel" = 5 ]; then
             $INFOTEXT "Installing startup script also in %s and %s" "$RC_PREFIX/rc${runlevel}.d/$S95NAME" "$RC_PREFIX/rc${runlevel}.d/$K03NAME"
@@ -3376,7 +3373,7 @@ RemoveRcScript()
       # we already installed the script in level 3
       SGE_ARCH=`$SGE_UTIL/arch`
       case $SGE_ARCH in
-      lx2?-*)
+      linux-*)
          runlevel=`grep "^id:.:initdefault:"  /etc/inittab | cut -f2 -d:`
          if [ "$runlevel" = 2 -o  "$runlevel" = 5 ]; then
             $INFOTEXT "Removing startup script %s and %s" "$RC_PREFIX/rc${runlevel}.d/$S95NAME" "$RC_PREFIX/rc${runlevel}.d/$K03NAME"

@@ -373,41 +373,49 @@ SetSpoolingOptionsBerkeleyDB()
       SpoolingCheckParams
       params_ok=$?
    fi
-   if [ "$QMASTER" = "install" ]; then
-      $INFOTEXT -n "\nThe Berkeley DB spooling method provides two configurations!\n\n" \
-                   " Local spooling:\n" \
-                   " The Berkeley DB spools into a local directory on this host (qmaster host)\n" \
-                   " This setup is faster, but you can't setup a shadow master host\n\n"
-      $INFOTEXT -n " Berkeley DB Spooling Server:\n" \
-                   " If you want to setup a shadow master host, you need to use\nBerkeley DB Spooling Server!\n" \
-                   " In this case you have to choose a host with a configured RPC service.\nThe qmaster host" \
-                   " connects via RPC to the Berkeley DB. This setup is more\nfailsafe," \
-                   " but results in a clear potential security hole. RPC communication\n" \
-                   " (as used by Berkeley DB) can be easily compromised. Please only use this\n" \
-                   " alternative if your site is secure or if you are not concerned about\n" \
-                   " security. Check the installation guide for further advice on how to achieve\n" \
-                   " failsafety without compromising security.\n\n"
 
-      if [ "$AUTO" = "true" ]; then
-         if [ "$DB_SPOOLING_SERVER" = "none" ]; then
-            is_server="false"
-         else
-            is_server="true"
-         fi
-      else
-         $INFOTEXT -n -ask "y" "n" -def "n" "Do you want to use a Berkeley DB Spooling Server? (y/n) [n] >> "
-         if [ $? = 0 ]; then
-            $INFOTEXT -u "Berkeley DB Setup\n"
-            $INFOTEXT "Please, log in to your Berkeley DB spooling host and execute \"inst_sge -db\""
-            $INFOTEXT -auto $AUTO -wait -n "Please do not continue, before the Berkeley DB installation with\n" \
-                                        "\"inst_sge -db\" is completed, continue with <RETURN>"
-            is_server="true"
-         else
-            is_server="false"
-            $INFOTEXT -n -auto $AUTO -wait "\nHit <RETURN> to continue >> "
-            $CLEAR
-         fi
-      fi
+   if [ "$QMASTER" = "install" ]; then
+
+      #
+      # SGE 2011.11 does not have this restriction anymore
+      #
+      # $INFOTEXT -n "\nThe Berkeley DB spooling method provides two configurations!\n\n" \
+      #              " Local spooling:\n" \
+      #              " The Berkeley DB spools into a local directory on this host (qmaster host)\n" \
+      #              " This setup is faster, but you can't setup a shadow master host\n\n"
+      # $INFOTEXT -n " Berkeley DB Spooling Server:\n" \
+      #              " If you want to setup a shadow master host, you need to use\nBerkeley DB Spooling Server!\n" \
+      #              " In this case you have to choose a host with a configured RPC service.\nThe qmaster host" \
+      #              " connects via RPC to the Berkeley DB. This setup is more\nfailsafe," \
+      #              " but results in a clear potential security hole. RPC communication\n" \
+      #              " (as used by Berkeley DB) can be easily compromised. Please only use this\n" \
+      #              " alternative if your site is secure or if you are not concerned about\n" \
+      #              " security. Check the installation guide for further advice on how to achieve\n" \
+      #              " failsafety without compromising security.\n\n"
+      #
+      # if [ "$AUTO" = "true" ]; then
+      #    if [ "$DB_SPOOLING_SERVER" = "none" ]; then
+      #       is_server="false"
+      #    else
+      #       is_server="true"
+      #    fi
+      # else
+      #    $INFOTEXT -n -ask "y" "n" -def "n" "Do you want to use a Berkeley DB Spooling Server? (y/n) [n] >> "
+      #    if [ $? = 0 ]; then
+      #       $INFOTEXT -u "Berkeley DB Setup\n"
+      #       $INFOTEXT "Please, log in to your Berkeley DB spooling host and execute \"inst_sge -db\""
+      #       $INFOTEXT -auto $AUTO -wait -n "Please do not continue, before the Berkeley DB installation with\n" \
+      #                                   "\"inst_sge -db\" is completed, continue with <RETURN>"
+      #       is_server="true"
+      #    else
+      #       is_server="false"
+      #       $INFOTEXT -n -auto $AUTO -wait "\nHit <RETURN> to continue >> "
+      #       $CLEAR
+      #    fi
+      # fi
+      #
+
+      is_server="false"
 
       if [ $is_server = "true" ]; then
          db_server_host=`echo "$1" | awk -F: '{print $1}'`
@@ -443,18 +451,24 @@ SetSpoolingOptionsBerkeleyDB()
                 is_spool="true"
              fi
 
-            CheckLocalFilesystem $SPOOLING_DIR
-            ret=$?
-            if [ $ret -eq 0 -a "$AUTO" = "false" ]; then
-               $INFOTEXT "\nThe database directory\n\n" \
-                            "   %s\n\n" \
-                            "is not on a local filesystem. Please choose a local filesystem or\n" \
-                            "configure the RPC Client/Server mechanism." $SPOOLING_DIR
-               $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
-            else
-               done="true" 
-            fi
-            
+            #
+            # SGE 2011.11 does not have this restriction anymore
+            # CheckLocalFilesystem $SPOOLING_DIR
+            # ret=$?
+            # echo "ret = $ret"
+            # echo "AUTO = $AUTO"
+            # if [ $ret -eq 0 -a "$AUTO" = "false" ]; then
+            #   $INFOTEXT "\nThe database directory\n\n" \
+            #                "   %s\n\n" \
+            #                "is not on a local filesystem. Please choose a local filesystem or\n" \
+            #                "configure the RPC Client/Server mechanism." $SPOOLING_DIR
+            #   $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
+            # else
+            #   done="true" 
+            # fi
+            #
+            done="true"
+
             if [ $is_spool = "false" ]; then
                done="false"
             elif [ $done = "false" ]; then
@@ -823,7 +837,7 @@ PrintConf()
    $ECHO "prolog                 none"
    $ECHO "epilog                 none"
    $ECHO "shell_start_mode       posix_compliant"
-   $ECHO "login_shells           sh,ksh,csh,tcsh"
+   $ECHO "login_shells           sh,bash,ksh,csh,tcsh"
    $ECHO "min_uid                0"
    $ECHO "min_gid                0"
    $ECHO "user_lists             none"
@@ -834,7 +848,7 @@ PrintConf()
    $ECHO "enforce_user           auto"
    $ECHO "load_report_time       00:00:40"
    $ECHO "max_unheard            00:05:00"
-   $ECHO "reschedule_unknown     00:00:00"
+   $ECHO "reschedule_unknown     02:00:00"
    $ECHO "loglevel               log_warning"
    $ECHO "administrator_mail     $CFG_MAIL_ADDR"
    if [ "$AFS" = true ]; then
@@ -1976,13 +1990,13 @@ GetDefaultJavaForPlatform()
          java_homes="/usr/java
 /usr/jdk/latest"
          ;;
-      lx*-amd64)   
+      linux-x64)   
          java_homes="/usr/java
 /usr/jdk/latest
 /usr/java/latest
 /etc/alternatives/jre"
          ;;
-      lx*-x86)     
+      linux-x86)     
          java_homes="/usr/java
 /usr/jdk/latest
 /usr/java/latest
@@ -2058,7 +2072,7 @@ HaveSuitableJavaBin() {
             list="$list `pkg search java 2>/dev/null| grep bin/java | grep file | awk '{print "/"$3}' 2>/dev/null`"
          fi
       #Linux
-      elif [ x`echo $SGE_ARCH| grep "lx-"` != x ]; then
+      elif [ x`echo $SGE_ARCH| grep "linux-"` != x ]; then
          #Try whereis
          temp=`whereis java 2>/dev/null`
          if [ -n "$temp" ]; then
@@ -2100,10 +2114,10 @@ GetJvmLibFromJavaHome() {
          #suffix=lib/i386/server/libjvm.so
          suffix=lib/i386/client/libjvm.so
          ;;
-      lx*-amd64)   
+      linux-x64)   
          suffix=lib/amd64/server/libjvm.so
          ;;
-      lx*-x86)     
+      linux-x86)     
          suffix=lib/i386/server/libjvm.so
          ;;
       darwin-ppc)

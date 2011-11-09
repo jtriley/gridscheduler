@@ -51,7 +51,7 @@ WelcomeTheUserExecHost()
    $INFOTEXT -u "\nWelcome to the Grid Engine execution host installation"
    $INFOTEXT "\nIf you haven't installed the Grid Engine qmaster host yet, you must execute\n" \
              "this step (with >install_qmaster<) prior the execution host installation.\n\n" \
-             "For a sucessfull installation you need a running Grid Engine qmaster. It is\n" \
+             "For a successful installation you need a running Grid Engine qmaster. It is\n" \
              "also neccesary that this host is an administrative host.\n\n" \
              "You can verify your current list of administrative hosts with\n" \
              "the command:\n\n" \
@@ -77,7 +77,7 @@ WelcomeTheUserSubmitHost()
    $INFOTEXT -u "\nWelcome to the Grid Engine submit host installation"
    $INFOTEXT "\nIf you haven't installed the Grid Engine qmaster host yet, you must execute\n" \
              "this step (with >install_qmaster<) prior the submit host installation.\n\n" \
-             "For a sucessfull installation you need a running Grid Engine qmaster. It is\n" \
+             "For a successful installation you need a running Grid Engine qmaster. It is\n" \
              "also necessary that this host is an administrative host.\n\n" \
              "The script will check this in a later step or use the following command:\n\n" \
              "   # qconf -sh\n\n" \
@@ -539,7 +539,7 @@ GetLocalExecdSpoolDir()
              "\nor you can define a different spool directory for this execution host." \
              "\n\nATTENTION: For most operating systems, the spool directory does not have to" \
              "\nbe located on a local disk. The spool directory can be located on a " \
-             "\nnetwork-accessible drive. However, using a local spool directory provides " \
+             "\nnetwork filesystem. However, using a local spool directory provides " \
              "\nbetter performance.\n\nFOR WINDOWS USERS: On Windows systems, the spool directory " \
              "MUST be located\non a local disk. If you install an execution daemon on a " \
              "Windows system\nwithout a local spool directory, the execution host is unusable." \

@@ -92,8 +92,7 @@ SpoolingQueryChange()
         if [ -z "$1" ]; then
            SPOOLING_DIR="`dirname $QMDIR`/spooldb"
         fi
-        $INFOTEXT -n "\nPlease enter the database directory now, even if you want to spool locally,\n" \
-                     "it is necessary to enter this database directory. \n\nDefault: [%s] >> " "$SPOOLING_DIR"
+        $INFOTEXT -n "\nPlease enter the database directory now. \n\nDefault: [%s] >> " "$SPOOLING_DIR"
         SPOOLING_DIR=`Enter "$SPOOLING_DIR"`
      fi
 
@@ -108,21 +107,29 @@ SpoolingCheckParams()
 {
    # if we use local spooling, check if the database directory is on local fs
    if [ "$SPOOLING_SERVER" = "none" ]; then
-      CheckLocalFilesystem $SPOOLING_DIR
-      ret=$?
-      if [ $ret -eq 0 ]; then
-      $INFOTEXT -e "\nThe database directory >%s<\n" \
-                   "is not on a local filesystem.\nPlease choose a local filesystem or configure the RPC Client/Server mechanism" $SPOOLING_DIR
-      if [ "$AUTO" = "true" ]; then
-         $INFOTEXT -log "\nThe database directory >%s<\n" \
-                   "is not on a local filesystem.\nPlease choose a local filesystem or configure the RPC Client/Server mechanism" $SPOOLING_DIR
-         MoveLog
-         exit 1
-      fi
-         return 0
-      else
-         return 1
-      fi
+
+      #
+      # SGE 2011.11 does not have this restriction anymore
+      #
+      # CheckLocalFilesystem $SPOOLING_DIR
+      # ret=$?
+      # echo "ret = $ret"
+      # if [ $ret -eq 0 ]; then
+      # $INFOTEXT -e "\nThe database directory >%s<\n" \
+      #              "is not on a local filesystem.\nPlease choose a local filesystem or configure the RPC Client/Server mechanism" $SPOOLING_DIR
+      # if [ "$AUTO" = "true" ]; then
+      #   $INFOTEXT -log "\nThe database directory >%s<\n" \
+      #              "is not on a local filesystem.\nPlease choose a local filesystem or configure the RPC Client/Server mechanism" $SPOOLING_DIR
+      #   MoveLog
+      #   exit 1
+      # fi
+      #   return 0
+      # else
+      #   return 1
+      # fi
+      # 
+
+      return 1
    else
       if [ "$BERKELEY" = "install" ]; then
          if [ "$IGNORE_FQDN_DEFAULT" != "true" -a "$IGNORE_FQDN_DEFAULT" != "false" ]; then

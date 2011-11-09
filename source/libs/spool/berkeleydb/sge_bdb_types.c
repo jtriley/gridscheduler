@@ -47,7 +47,8 @@
 #include "spool/berkeleydb/msg_spoollib_berkeleydb.h"
 #include "spool/berkeleydb/sge_bdb_types.h"
 
-struct _bdb_info {
+struct _bdb_info
+{
    pthread_mutex_t   mtx;                 /* lock access to this object */
    pthread_key_t     key;                 /* for thread specific data */
   
@@ -62,7 +63,8 @@ struct _bdb_info {
    bool              recover;             /* shall we recover on open? */
 };
 
-typedef struct bdb_connection {
+typedef struct
+{
    DB_ENV *    env;                 /* thread specific database environment */
    DB **        db;                 /* thread specific database object */
    DB_TXN *    txn;                 /* transaction handle, always per thread */
@@ -112,7 +114,7 @@ bdb_info
 bdb_create(const char *server, const char *path) 
 {
    int ret, i;
-   bdb_info info = (bdb_info) malloc(sizeof(struct _bdb_info));
+   bdb_info info = malloc(sizeof(struct _bdb_info));
 
    pthread_mutex_init(&(info->mtx), NULL);
    ret = pthread_key_create(&(info->key), bdb_destroy_connection);
@@ -123,8 +125,9 @@ bdb_create(const char *server, const char *path)
    info->path   = path;
    info->env    = NULL;
 
-   info->db     = (DB **)malloc(BDB_ALL_DBS * sizeof(DB *));
-   for (i = 0; i < BDB_ALL_DBS; i++) {
+   info->db     = malloc(BDB_ALL_DBS * sizeof(DB *));
+   for (i = 0; i < BDB_ALL_DBS; i++)
+   {
       info->db[i] = NULL;
    }
 
@@ -147,7 +150,7 @@ bdb_init_connection(bdb_connection *con)
 
    con->env = NULL;
 
-   con->db     = (DB **)malloc(BDB_ALL_DBS * sizeof(DB *));
+   con->db     = malloc(BDB_ALL_DBS * sizeof(DB *));
    for (i = 0; i < BDB_ALL_DBS; i++) {
       con->db[i] = NULL;
    }

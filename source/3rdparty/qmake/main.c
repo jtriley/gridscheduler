@@ -51,6 +51,7 @@ int __stack = 20000; /* Make sure we have 20K of stack space */
 void init_dir (void);
 void remote_setup (void);
 void remote_cleanup (void);
+void remote_options (int *p_argc, char **p_argv[]);
 RETSIGTYPE fatal_error_signal (int sig);
 
 void print_variable_data_base (void);
@@ -83,7 +84,7 @@ static const char *define_makeflags (int all, int makefile);
 static char *quote_for_env (char *out, const char *in);
 static void initialize_global_hash_tables (void);
 
-
+
 /* The structure that describes an accepted command switch.  */
 
 struct command_switch
@@ -293,7 +294,7 @@ struct variable shell_var;
 
 char cmd_prefix = '\t';
 
-
+
 /* The usage output.  We write it this way to make life easier for the
    translators, especially those trying to translate to right-to-left
    languages like Hebrew.  */
@@ -455,7 +456,7 @@ struct command_variable
     struct variable *variable;
   };
 static struct command_variable *command_variables;
-
+
 /* The name we were invoked with.  */
 
 char *program;
@@ -512,7 +513,7 @@ int not_parallel;
    warning at the end of the run. */
 
 int clock_skew_detected;
-
+
 /* Mask of signals that are being caught with fatal_error_signal.  */
 
 #ifdef	POSIX
@@ -953,6 +954,9 @@ main (int argc, char **argv, char **envp)
 #ifdef HAVE_ATEXIT
   atexit (close_stdout);
 #endif
+
+  /* read and strip options for remote execution */
+  remote_options(&argc, &argv);
 
   /* Needed for OS/2 */
   initialize_main(&argc, &argv);
@@ -2312,7 +2316,7 @@ main (int argc, char **argv, char **envp)
   /* NOTREACHED */
   return 0;
 }
-
+
 /* Parsing of arguments, decoding of switches.  */
 
 static char options[1 + sizeof (switches) / sizeof (switches[0]) * 3];
@@ -2730,7 +2734,7 @@ decode_env_switches (char *envar, unsigned int len)
   /* Parse those words.  */
   decode_switches (argc, argv, 1);
 }
-
+
 /* Quote the string IN so that it will be interpreted as a single word with
    no magic by decode_env_switches; also double dollar signs to avoid
    variable expansion in make itself.  Write the result into OUT, returning
@@ -3034,7 +3038,7 @@ define_makeflags (int all, int makefile)
 
   return v->value;
 }
-
+
 /* Print version information.  */
 
 static void
@@ -3157,7 +3161,7 @@ clean_jobserver (int status)
         }
     }
 }
-
+
 /* Exit with STATUS, cleaning up as necessary.  */
 
 void
@@ -3209,7 +3213,7 @@ die (int status)
 
   exit (status);
 }
-
+
 /* Write a message indicating that we've just entered or
    left (according to ENTERING) the current directory.  */
 

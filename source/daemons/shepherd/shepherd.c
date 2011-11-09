@@ -160,13 +160,13 @@ pid_t wait3(int *, int, struct rusage *);
 bool g_new_interactive_job_support = false;
 int  g_noshell = 0;
 
-char shepherd_job_dir[2048];
+char shepherd_job_dir[SGE_PATH_MAX];
 int  received_signal=0;  /* set by signalhandler, when a signal arrives */
 
 
 /* module variables */
-static char ckpt_command[2048], migr_command[2048];
-static char rest_command[2048], clean_command[2048];
+static char ckpt_command[SGE_PATH_MAX], migr_command[SGE_PATH_MAX];
+static char rest_command[SGE_PATH_MAX], clean_command[SGE_PATH_MAX];
 
 static int notify;      /* 0 if no notify or # of seconds to delay signal */
 static int exit_status_for_qrsh = 0;
@@ -177,8 +177,8 @@ static int signalled_ckpt_job = 0; /* marker if signalled a ckpt job */
 
 /* function forward declarations */
 static int notify_tasker(u_long32 exit_status);
-static int start_child(const char *childname, char *script_file, pid_t *pidp, 
-                       int timeout, int ckpt_type);
+static int start_child(const char *childname, char *script_file, pid_t *pidp,
+                       int timeout, int ckpt_type, char *status_env);
 static int wait_my_builtin_ijs_child(int pid, const char *childname, int timeout,
    ckpt_info_t *p_ckpt_info, ijs_fds_t *p_ijs_fds, struct rusage *rusage,
    dstring *err_msg);
@@ -243,17 +243,21 @@ static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
    /* wait until parent has registered at the server */
    shepherd_trace("child: trying to read from parent through the pipe");
    ret = read(fd_pipe_to_child[0], tmpbuf, 11);
-   if (ret <= 0) {
+   if (ret <= 0)
+   {
       shepherd_trace("child: error communicating with parent: %d, %s", 
                      errno, strerror(errno));
       ret = -1;
-   } else {
+   }
+   else
+   {
       /* close other side of our copy of the pipe */
       close(fd_pipe_to_child[0]);
       fd_pipe_to_child[0] = -1;
       shepherd_trace("child: parent sent us '%s'", tmpbuf);
       sscanf(tmpbuf, "noshell = %d", &g_noshell);
-      if (g_noshell != 0 && g_noshell != 1) {
+      if (g_noshell != 0 && g_noshell != 1)
+      {
          shepherd_trace("child: parent didn't register to server. %d, %s", 
                         errno, strerror(errno));
          ret = -1;
@@ -266,42 +270,58 @@ static int map_signal(int sig)
 {
    int ret = sig;
 
-   if (sig == SIGTTIN) {
+   if (sig == SIGTTIN)
+   {
      /* SIGSTOP would also be delivered using SIGTTIN due to problems with
       * delivering SIGWINCH to shepherd, see CR 6623174
       */ 
       FILE *signal_file = fopen("signal", "r");
 
-      if (signal_file != NULL) {
+      if (signal_file != NULL)
+      {
          fscanf(signal_file, "%d", &ret);
          FCLOSE(signal_file);
       } 
-   } else if (sig == SIGTTOU) {
+   }
+   else if (sig == SIGTTOU)
+   {
       /* checkpoint signal value */
       ;
-   } else if (sig == SIGUSR2) {
+   }
+   else if (sig == SIGUSR2)
+   {
 #ifdef SIGXCPU
       ret = SIGXCPU;
 #else
       ret = SIGKILL;
 #endif
-   } else if (sig == SIGTSTP) {
+   }
+   else if (sig == SIGTSTP)
+   {
       ret = SIGKILL;
-   } else if (sig == SIGUSR1 || sig == SIGCONT) {
+   }
+   else if (sig == SIGUSR1 || sig == SIGCONT)
+   {
       /* identically */
       ;
-   } else {
+   }
+   else
+   {
       /* unmapable signal */
       shepherd_trace("should map unmapable signal");
    }
 
-   if (sig != ret) {
+   if (sig != ret)
+   {
       shepherd_trace("mapped signal %s to signal %s", 
                      sge_sys_sig2str(sig), sge_sys_sig2str(ret));
-   } else {
+   }
+   else
+   {
       shepherd_trace("no need to map signal %s", sge_sys_sig2str(sig));
    }
    return ret;
+
 FCLOSE_ERROR:
    shepherd_trace(MSG_FILE_ERRORCLOSEINGXY_SS, "signal", strerror(errno));
    return ret;
@@ -310,27 +330,29 @@ FCLOSE_ERROR:
 static int do_prolog(int timeout, int ckpt_type)
 {
    char *prolog;
-   char command[10000];
-   int exit_status;
 
    shepherd_state = SSTATE_BEFORE_PROLOG;
 
    /* start prolog */
    prolog = get_conf_val("prolog");
-   if (strcasecmp("none", prolog)) {
-      int i, n_exit_status = count_exit_status();
+   if (strcasecmp("none", prolog))
+   {
+      char command[10000];
+      int i, exit_status, n_exit_status = count_exit_status();
 
       replace_params(prolog, command, sizeof(command)-1, prolog_epilog_variables);
-      exit_status = start_child("prolog", command, NULL, timeout, ckpt_type);
+      exit_status = start_child("prolog", command, NULL, timeout, ckpt_type, NULL);
 
-      if (n_exit_status<(i=count_exit_status())) {
+      if (n_exit_status<(i=count_exit_status()))
+      {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /* in this case the child didnt get to the exec call or it failed */
          shepherd_trace("failed starting prolog");
          return SSTATE_BEFORE_PROLOG;
       }
 
-      if (exit_status) {
+      if (exit_status)
+      {
          /*
           * We should not exit here:
           *    We may neither start the job nor pe_start procedure, 
@@ -338,20 +360,26 @@ static int do_prolog(int timeout, int ckpt_type)
           *    exists, to allow some cleanup. The exit status of 
           *    this prolog failure may not get lost.
           */
-         switch( exit_status ) {
+         switch ( exit_status )
+         {
             case RESCHEDULE_EXIT_STATUS:
                shepherd_state = SSTATE_AGAIN;
                break;
+
             case APPERROR_EXIT_STATUS:
                shepherd_state = SSTATE_APPERROR;
                break;
+
             default:
                shepherd_state = SSTATE_PROLOG_FAILED;
          }
+
          shepherd_error(0, "exit_status of prolog = %d", exit_status);
          return SSTATE_PROLOG_FAILED;
       }
-   } else {
+   }
+   else
+   {
       shepherd_trace("no prolog script to start");
    }
 
@@ -361,22 +389,24 @@ static int do_prolog(int timeout, int ckpt_type)
 static int do_epilog(int timeout, int ckpt_type)
 {
    char *epilog;
-   char command[10000];
-   int exit_status;
 
    shepherd_state = SSTATE_BEFORE_EPILOG;
 
    epilog = get_conf_val("epilog");
-   if (strcasecmp("none", epilog)) {
-      int i, n_exit_status = count_exit_status();
+   if (strcasecmp("none", epilog))
+   {
+      char command[10000];
+      int i, exit_status, n_exit_status = count_exit_status();
 
       /* start epilog */
-      replace_params(epilog, command, sizeof(command)-1, 
-                     prolog_epilog_variables);
-      exit_status = start_child("epilog", command, NULL, timeout, ckpt_type);
-      if (n_exit_status<(i=count_exit_status())) {
-         shepherd_trace("exit states increased from %d to %d", 
-                                n_exit_status, i);
+      replace_params(epilog, command, sizeof(command)-1, prolog_epilog_variables);
+
+      exit_status = start_child("epilog", command, NULL, timeout, ckpt_type, NULL);
+
+      if (n_exit_status<(i=count_exit_status()))
+      {
+         shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
+
          /*
          ** in this case the child didnt get to the exec call or it failed
          ** the status that waitpid and finally start_child returns is
@@ -386,8 +416,10 @@ static int do_epilog(int timeout, int ckpt_type)
          return SSTATE_BEFORE_EPILOG;
       }
 
-      if (exit_status) {
-         switch( exit_status ) {
+      if (exit_status)
+      {
+         switch (exit_status)
+         {
             case RESCHEDULE_EXIT_STATUS:
                shepherd_state = SSTATE_AGAIN;
                break;
@@ -397,12 +429,15 @@ static int do_epilog(int timeout, int ckpt_type)
             default:
                shepherd_state = SSTATE_EPILOG_FAILED;
          }
+
          shepherd_error(0, "exit_status of epilog = %d", exit_status);
          return SSTATE_EPILOG_FAILED;
       }
    }
    else
+   {
       shepherd_trace("no epilog script to start");
+   }
    
    return 0;
 }
@@ -417,20 +452,22 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
 
    /* start pe_start */
    pe_start = get_conf_val("pe_start");
-   if (strcasecmp("none", pe_start)) {
+   if (strcasecmp("none", pe_start))
+   {
       int i, n_exit_status = count_exit_status();
 
       shepherd_trace(pe_start);
-      replace_params(pe_start, command, sizeof(command)-1, 
-         pe_variables);
+      replace_params(pe_start, command, sizeof(command)-1, pe_variables);
+
       shepherd_trace(command);
 
       /* 
          starters of parallel environments may not get killed 
          in case of success - so we save their pid for later use
       */
-      exit_status = start_child("pe_start", command, pe_pid, timeout, ckpt_type);
-      if (n_exit_status<(i=count_exit_status())) {
+      exit_status = start_child("pe_start", command, pe_pid, timeout, ckpt_type, NULL);
+      if (n_exit_status<(i=count_exit_status()))
+      {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
          ** in this case the child didnt get to the exec call or it failed
@@ -440,7 +477,8 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
          shepherd_trace("failed starting pe_start");
          return SSTATE_BEFORE_PESTART;
       }
-      if (exit_status) {
+      if (exit_status)
+      {
          /*
           * We should not exit here:
           *    We may not start the job, but we should try to run 
@@ -448,7 +486,8 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
           *    allow some cleanup. The exit status of this pe_start
           *    failure may not get lost.
           */
-         switch( exit_status ) {
+         switch( exit_status )
+         {
             case RESCHEDULE_EXIT_STATUS:
                shepherd_state = SSTATE_AGAIN;
                break;
@@ -462,7 +501,9 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
          shepherd_error(0, "exit_status of pe_start = %d", exit_status);
          return SSTATE_PESTART_FAILED;
       }
-   } else {
+   }
+   else
+   {
       shepherd_trace("no pe_start script to start");
    }
 
@@ -476,16 +517,16 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
    int exit_status;
    
    pe_stop = get_conf_val("pe_stop");
-   if (strcasecmp("none", pe_stop)) {
+   if (strcasecmp("none", pe_stop))
+   {
       int i, n_exit_status = count_exit_status();
 
       shepherd_state = SSTATE_BEFORE_PESTOP;
 
       shepherd_trace(pe_stop);
-      replace_params(pe_stop, command, sizeof(command)-1, 
-         pe_variables);
+      replace_params(pe_stop, command, sizeof(command)-1, pe_variables);
       shepherd_trace(command);
-      exit_status = start_child("pe_stop", command, NULL, timeout, ckpt_type);
+      exit_status = start_child("pe_stop", command, NULL, timeout, ckpt_type, NULL);
 
       /* send a kill to pe_start process
        *
@@ -494,7 +535,8 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
        * shepherd_signal_job(-*pe_pid, SIGKILL);
        */
 
-      if (n_exit_status<(i=count_exit_status())) {
+      if (n_exit_status<(i=count_exit_status()))
+      {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
          ** in this case the child didnt get to the exec call or it failed
@@ -505,14 +547,16 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
          return SSTATE_BEFORE_PESTOP;
       }
 
-      if (exit_status) {
+      if (exit_status)
+      {
          /*
           * We should not exit here:
           *    We should try to run the epilog procedure if it 
           *    exists, to allow cleanup. The exit status of this 
           *    pe_start failure may not get lost.
           */
-         switch( exit_status ) {
+         switch( exit_status )
+         {
             case RESCHEDULE_EXIT_STATUS:
                shepherd_state = SSTATE_AGAIN;
                break;
@@ -526,7 +570,9 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
          shepherd_error(0, "exit_status of pe_stop = %d", exit_status);
          return SSTATE_PESTOP_FAILED;
       }
-   } else {
+   }
+   else
+   {
       shepherd_trace("no pe_stop script to start");
    }
 
@@ -595,12 +641,11 @@ static void signal_handler(int signal)
    received_signal = signal;
 }
 
-static void show_shepherd_version(void) {
-
+static void show_shepherd_version(void)
+{
    printf("%s %s\n", GE_SHORTNAME, GDI_VERSION);
    printf("%s %s [options]\n", MSG_GDI_USAGE_USAGESTRING , "sge_shepherd");
    printf("   %-40.40s %s\n", MSG_GDI_USAGE_help_OPT , MSG_GDI_UTEXT_help_OPT);
-
 }
 
 int main(int argc, char **argv) 
@@ -623,28 +668,33 @@ int main(int argc, char **argv)
 
    sge_mt_init();
 
-   if (argc >= 2) {
-      if ( strcmp(argv[1],"-help") == 0) {
+   if (argc >= 2)
+   {
+      if ( strcmp(argv[1],"-help") == 0)
+      {
          show_shepherd_version();
          return 1;
       }
    }
+
 #if defined(INTERIX) && defined(SECURE)
    sge_init_shared_ssl_lib();
 #endif
+
    shepherd_trace_init( );
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   shepherd_trace("shepherd called with uid = "uid_t_fmt", euid = "uid_t_fmt, 
-                  getuid(), geteuid());
+   shepherd_trace("shepherd called with uid = "uid_t_fmt", euid = "uid_t_fmt, getuid(), geteuid());
 
    shepherd_state = SSTATE_BEFORE_PROLOG;
-   if (getcwd(shepherd_job_dir, 2047) == NULL) {
+   if (getcwd(shepherd_job_dir, SGE_PATH_MAX) == NULL)
+   {
       shepherd_error(1, "can't read cwd - getcwd failed: %s", strerror(errno));
    }   
 
-   if (argc >= 2 && !strcmp("-bg", argv[1])) {
+   if (argc >= 2 && !strcmp("-bg", argv[1]))
+   {
       foreground = 0;   /* no output to stderr */
    }
 
@@ -657,24 +707,31 @@ int main(int argc, char **argv)
     * this is done because we need to know the name of the admin user
     * for file creation
     */
-   if ((ret=read_config("config"))) {
+   if ((ret=read_config("config")))
+   {
 
       /* if we can't read the config file, try to switch to admin user
        * that our error/trace message can be succesfully logged
        * this is done in case where our getuid() is root and our
        * geteuid() is a normal user id
        */
-       if(getuid() == SGE_SUPERUSER_UID &&
-          geteuid() != SGE_SUPERUSER_UID) { 
+       if (getuid() == SGE_SUPERUSER_UID && geteuid() != SGE_SUPERUSER_UID)
+       {
           char name[128];
-          if (!sge_uid2user(geteuid(), name, sizeof(name), MAX_NIS_RETRIES)) {
+
+          if (!sge_uid2user(geteuid(), name, sizeof(name), MAX_NIS_RETRIES))
+          {
              sge_set_admin_username(name, NULL);
              sge_switch2admin_user();
           }
       }
-      if (ret == 1) {
+
+      if (ret == 1)
+      {
          shepherd_error(1, "can't read configuration file: %s", strerror(errno));
-      } else {
+      }
+      else
+      {
          shepherd_error(1, "can't read configuration file: malloc() failure");
       }
    }
@@ -690,36 +747,43 @@ int main(int argc, char **argv)
        * TODO: allow dynamic configuration for each job?
        */
       config_errfunc = NULL;
+
       script_file = get_conf_val("script_file");
-      if (script_file != NULL
-          && strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0) {
-         tmp_rsh_daemon = get_conf_val("rsh_daemon");
-         if (tmp_rsh_daemon != NULL
-             && strcasecmp(tmp_rsh_daemon, "builtin") == 0) {
-            g_new_interactive_job_support = true;
-            shepherd_trace("rsh_daemon = %s", tmp_rsh_daemon);
+
+      if (script_file != NULL)
+      {
+         if (strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0)
+         {
+            tmp_rsh_daemon = get_conf_val("rsh_daemon");
+
+            if (tmp_rsh_daemon != NULL && strcasecmp(tmp_rsh_daemon, "builtin") == 0)
+            {
+               g_new_interactive_job_support = true;
+               shepherd_trace("rsh_daemon = %s", tmp_rsh_daemon);
+            }
+         }
+         else if (strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0)
+         {
+            tmp_rlogin_daemon = get_conf_val("rlogin_daemon");
+
+            if (tmp_rlogin_daemon != NULL && strcasecmp(tmp_rlogin_daemon, "builtin") == 0)
+            {
+               g_new_interactive_job_support = true;
+               shepherd_trace("rlogin_daemon = %s", tmp_rlogin_daemon);
+            }
+         }
+         else if (strcasecmp(script_file, JOB_TYPE_STR_QLOGIN) == 0)
+         {
+            tmp_qlogin_daemon = get_conf_val("qlogin_daemon");
+
+            if (tmp_qlogin_daemon != NULL && strcasecmp(tmp_qlogin_daemon, "builtin") == 0)
+            {
+               g_new_interactive_job_support = true;
+               shepherd_trace("qlogin_daemon = %s", tmp_qlogin_daemon);
+            }
          }
       }
 
-      if (script_file != NULL
-          && strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0) {
-         tmp_rlogin_daemon = get_conf_val("rlogin_daemon");
-         if (tmp_rlogin_daemon != NULL
-             && strcasecmp(tmp_rlogin_daemon, "builtin") == 0) {
-            g_new_interactive_job_support = true;
-            shepherd_trace("rlogin_daemon = %s", tmp_rlogin_daemon);
-         }
-      }
-
-      if (script_file != NULL
-          && strcasecmp(script_file, JOB_TYPE_STR_QLOGIN) == 0) {
-         tmp_qlogin_daemon = get_conf_val("qlogin_daemon");
-         if (tmp_qlogin_daemon != NULL
-             && strcasecmp(tmp_qlogin_daemon, "builtin") == 0) {
-            g_new_interactive_job_support = true;
-            shepherd_trace("qlogin_daemon = %s", tmp_qlogin_daemon);
-         }
-      }
       config_errfunc = shepherd_error_ptr;
    }
    
@@ -729,19 +793,22 @@ int main(int argc, char **argv)
 
    /* init admin user stuff */
    admin_user = get_conf_val("admin_user");
-   if (sge_set_admin_username(admin_user, err_str)) {
+   if (sge_set_admin_username(admin_user, err_str))
+   {
       shepherd_error(1, err_str);
    }
 
-   if (sge_switch2admin_user()) {
+   if (sge_switch2admin_user())
+   {
       shepherd_error(1, "can't switch to admin user: sge_switch2admin_user() failed");
    }
 
-	/* finalize initialization of shepherd_trace - give the trace file
-	 * to the job owner so not only root/admin user but also he can use
-	 * the trace file later.
-	 */
+   /* finalize initialization of shepherd_trace - give the trace file
+    * to the job owner so not only root/admin user but also he can use
+    * the trace file later.
+    */
    shepherd_trace_chown(get_conf_val("job_owner"));
+
    /*
     * Close trace file to force a new open() with super user credentials for
     * NFS writes. Otherwise we will see EACCESS for all writes from now on
@@ -750,7 +817,8 @@ int main(int argc, char **argv)
     */
    shepherd_trace_exit();
 
-   if (shepherd_trace("starting up %s", feature_get_product_name(FS_VERSION, &ds)) != 0) {
+   if (shepherd_trace("starting up %s", feature_get_product_name(FS_VERSION, &ds)) != 0)
+   {
       shepherd_error(1, "can't write to \"trace\" file");
    }
  
@@ -763,13 +831,15 @@ int main(int argc, char **argv)
    /* write our pid to file */
    pid = getpid();
 
-   if(!shepherd_write_pid_file(pid, &ds)) {
+   if (!shepherd_write_pid_file(pid, &ds))
+   {
       shepherd_error(1, sge_dstring_get_string(&ds));
    }
 
    uid = getuid();
 
-   if (!sge_is_start_user_superuser()) {
+   if (!sge_is_start_user_superuser())
+   {
       shepherd_trace("warning: starting not as superuser (uid=%d)", uid);
    }
 
@@ -777,7 +847,8 @@ int main(int argc, char **argv)
    i = setpgid(pid, pid);
    shepherd_trace("setpgid("pid_t_fmt", "pid_t_fmt") returned %d", pid, pid, i);
 
-   if ((ckpt_type = check_ckpttype()) == -1) {
+   if ((ckpt_type = check_ckpttype()) == -1)
+   {
       shepherd_error(1, "checkpointing with incomplete specification or "
                      "unknown interface requested");
    }
@@ -792,19 +863,22 @@ int main(int argc, char **argv)
 
    /* 
     * Perform core binding (do not use processor set together with core binding) 
-    */ 
+    *
+    * With Solaris Proc Set, we switch to startuser
+    */
 #if defined(PLPA_LINUX)
    do_core_binding();
 #elif defined(SOLARIS86) || defined(SOLARISAMD64)
    /*switch later to startuser */
    do_core_binding();
-#endif    
+#endif
 
    /*
     * this blocks sge_shepherd until the first time the token is
     * sucessfully set, then we start the sge_coshepherd in background
     */
-   if ((cp = search_conf_val("use_afs")) && atoi(cp) > 0) {
+   if ((cp = search_conf_val("use_afs")) && atoi(cp) > 0)
+   {
       char *coshepherd = search_conf_val("coshepherd");
       char *set_token_cmd = search_conf_val("set_token_cmd");
       char *job_owner = search_conf_val("job_owner");
@@ -812,17 +886,20 @@ int main(int argc, char **argv)
       char *tokenbuf;
 
       shepherd_trace("beginning AFS setup");
-      if (!(coshepherd && set_token_cmd && job_owner && token_extend_time)) {
+      if (!(coshepherd && set_token_cmd && job_owner && token_extend_time))
+      {
          shepherd_state = SSTATE_AFS_PROBLEM;
          shepherd_error(1, "AFS with incomplete specification requested");
       }
-      if ((tokenbuf = sge_read_token(TOKEN_FILE)) == NULL) {
+
+      if ((tokenbuf = sge_read_token(TOKEN_FILE)) == NULL)
+      {
          shepherd_state = SSTATE_AFS_PROBLEM;
          shepherd_error(1, "can't read AFS token");
       }   
 
-      if (sge_afs_extend_token(set_token_cmd, tokenbuf, job_owner,
-                           atoi(token_extend_time), err_str)) {
+      if (sge_afs_extend_token(set_token_cmd, tokenbuf, job_owner, atoi(token_extend_time), err_str))
+      {
          shepherd_state = SSTATE_AFS_PROBLEM;                  
          shepherd_error(1, err_str);
       }
@@ -833,9 +910,9 @@ int main(int argc, char **argv)
       memset(tokenbuf, 0, strlen(tokenbuf));
       free(tokenbuf);
 
-
       if ((coshepherd_pid = start_token_cmd(0, coshepherd, set_token_cmd,
-                                            job_owner, token_extend_time)) < 0) {
+                                            job_owner, token_extend_time)) < 0)
+      {
          shepherd_state = SSTATE_AFS_PROBLEM;                                    
          shepherd_error(1, "can't start coshepherd");                               
       }
@@ -844,46 +921,65 @@ int main(int argc, char **argv)
    }
 
    pe = get_conf_val("pe");
-   if (!strcasecmp(pe, "none")) {
+   if (!strcasecmp(pe, "none"))
+   {
       pe = NULL;
    }
 
    run_epilog = 1;
-   if ((exit_status = do_prolog(script_timeout, ckpt_type))) {
+   if ((exit_status = do_prolog(script_timeout, ckpt_type)))
+   {
       if (exit_status == SSTATE_BEFORE_PROLOG)
          run_epilog = 0;
-   } else if (pending_sig(SIGTTOU)) {
+   }
+   else if (pending_sig(SIGTTOU))
+   {
       /* got a signal during prolog causing job to migrate? */ 
       shepherd_trace("got SIGMIGR before job start");
       exit_status = 0; /* no error */
       create_checkpointed_file(0);
-   } else if (pending_sig(SIGKILL)) {
+   }
+   else if (pending_sig(SIGKILL))
+   {
       /* got a signal during prolog causing job exit ? */ 
       shepherd_trace("got SIGKILL before job start");
       exit_status = 0; /* no error */
-   } else {
+   }
+   else
+   {
       /* start pe_start */
       run_pe_stop = 1;
-      if (pe && (exit_status = do_pe_start(script_timeout, ckpt_type, &pe_pid))) {
-         if (exit_status == SSTATE_BEFORE_PESTART) {
+      if (pe && (exit_status = do_pe_start(script_timeout, ckpt_type, &pe_pid)))
+      {
+         if (exit_status == SSTATE_BEFORE_PESTART)
+         {
             run_pe_stop = 0;
          }
-      } else {
+      }
+      else
+      {
          shepherd_state = SSTATE_BEFORE_JOB;
          /* start job script */
          script_file = get_conf_val("script_file");
-         if (strcasecmp("none", script_file)) {
-            if (pending_sig(SIGKILL)) { 
+         if (strcasecmp("none", script_file))
+         {
+            if (pending_sig(SIGKILL))
+            { 
                shepherd_trace("got SIGKILL before job start");
                exit_status = 0; /* no error */
-            } else if (pending_sig(SIGTTOU)) { 
+            }
+            else if (pending_sig(SIGTTOU))
+            { 
                shepherd_trace("got SIGMIGR before job start");
                create_checkpointed_file(0);
                exit_status = 0; /* no error */
-            } else {
-               exit_status = start_child("job", script_file, NULL, 0, ckpt_type);
+            }
+            else
+            {
+               exit_status = start_child("job", script_file, NULL, 0, ckpt_type, "SGE_JOBEXIT_STAT");
 
-               if (count_exit_status()>0) {
+               if (count_exit_status()>0)
+               {
                   /*
                   ** in this case the child didn't get to the exec call or it failed
                   ** the status that waitpid and finally start_child returns is
@@ -893,30 +989,39 @@ int main(int argc, char **argv)
                   /* we may not give up here 
                      start pe_stop and epilog before exiting */
                   shepherd_trace("failed starting job");
-               } else {
+               }
+               else
+               {
                   bool call_error_impl = false;
 
-                  switch( exit_status ) {
+                  switch (exit_status)
+                  {
                      case RESCHEDULE_EXIT_STATUS:
-                        if( !atoi(get_conf_val("forbid_reschedule"))) {
+                        if (!atoi(get_conf_val("forbid_reschedule")))
+                        {
                            shepherd_state = SSTATE_AGAIN;
                            call_error_impl = true;
                         }
                         break;
+
                      case APPERROR_EXIT_STATUS:
-                        if( !atoi(get_conf_val("forbid_apperror"))) {
+                        if (!atoi(get_conf_val("forbid_apperror")))
+                        {
                            shepherd_state = SSTATE_APPERROR;
                            call_error_impl = true;
                         }
                         break;
                   }
-                  if( call_error_impl ) {
-                     shepherd_error(0, "exit_status of job start = %d", 
-                                    exit_status);
+
+                  if (call_error_impl)
+                  {
+                     shepherd_error(0, "exit_status of job start = %d", exit_status);
                   }
                } 
             }
-         } else {
+         }
+         else
+         {
             shepherd_trace("no script to start");
          }
 
@@ -924,12 +1029,14 @@ int main(int argc, char **argv)
       }
 
       /* start pe_stop */
-      if (pe && run_pe_stop) {
+      if (pe && run_pe_stop)
+      {
          do_pe_stop(script_timeout, ckpt_type, &pe_pid);
       }
    }
 
-   if (run_epilog) {
+   if (run_epilog)
+   {
       do_epilog(script_timeout, ckpt_type);
    }
 
@@ -938,26 +1045,34 @@ int main(int argc, char **argv)
     */
    sge_pset_free_processor_set();
 
-   if (coshepherd_pid > 0) {
+   if (coshepherd_pid > 0)
+   {
       shepherd_trace("sending SIGTERM to sge_coshepherd");
       sge_switch2start_user();
       kill(coshepherd_pid, SIGTERM);
       sge_switch2admin_user();
    }
 
-   if (!SGE_STAT("exit_status", &buf) && buf.st_size) {
+   if (!SGE_STAT("exit_status", &buf) && buf.st_size)
+   {
       shepherd_read_exit_status_file(&return_code);
-   } else {
+   }
+   else
+   {
       /* ensure an exit status file exists */
 		shepherd_write_exit_status("0");
       return_code = 0;
    }
 
-   if (search_conf_val("qrsh_control_port") != NULL) {
+   if (search_conf_val("qrsh_control_port") != NULL)
+   {
       shepherd_write_shepherd_about_to_exit_file();
-      if (g_new_interactive_job_support == false) {
+      if (g_new_interactive_job_support == false)
+      {
          write_exit_code_to_qrsh(exit_status_for_qrsh);
-      } else {
+      }
+      else
+      {
          shepherd_trace("writing exit status to qrsh: %d", exit_status_for_qrsh);
          close_parent_loop(exit_status_for_qrsh);
       }
@@ -973,6 +1088,8 @@ int main(int argc, char **argv)
 
 PARAMETER
 
+   childname - prolog, job, epilog
+
    pidp 
 
       If NULL the process gets killed after child exit
@@ -983,18 +1100,13 @@ PARAMETER
       for later use.
 
  *******************************************************************/
-static int start_child(
-const char *childname,        /* prolog, job, epilog */
-char *script_file,
-pid_t *pidp,
-int timeout,
-int ckpt_type 
-) {
+static int start_child(const char *childname, char *script_file, pid_t *pidp, int timeout, int ckpt_type, char *status_env)
+{
    SGE_STRUCT_STAT buf;
    struct rusage rusage;
    u_long32 start_time, end_time;
    u_long32 wait_status = 0;
-   int pid, status, core_dumped, ret;
+   int pid, status, ret;
    int child_signal = 0;
    int exit_status = 0;
    int wexit_flag_true = 1; /* to please IRIX compiler */
@@ -1003,88 +1115,111 @@ int ckpt_type
    int fd_pipe_err[2] = {-1, -1};
    int fd_pipe_to_child[2] = {-1, -1};
    int fd_pty_master = -1;
-   ternary_t use_pty = UNSET;
    dstring err_msg = DSTRING_INIT;
-   bool is_interactive = false;
+   bool is_job, is_interactive = false;
    ckpt_info_t ckpt_info = {0, 0, 0};
-#if defined(IRIX)
-   ash_t ash = 0;
-#elif defined(NECSX4) || defined(NECSX5)
-	id_t jobid = 0;
-#elif defined(CRAY)
-   int jobid = 0;
-#endif
-
-   ckpt_info.type = ckpt_type;
 
    /* Do we have an interactive job? */
-   if (strcasecmp(script_file, JOB_TYPE_STR_QLOGIN) == 0 ||
-       strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0 ||
-       strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0) {
+   if (strcasecmp(script_file, JOB_TYPE_STR_QLOGIN)  == 0 ||
+       strcasecmp(script_file, JOB_TYPE_STR_QRSH)    == 0 ||
+       strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0)
+   {
       is_interactive = true;
    }
 
-   /* Try to read "pty" from config, if it is not there or set to "2", use default */
-   {
-      char *conf_val = get_conf_val("pty");
-      if (conf_val != NULL) {
-         sscanf(conf_val, "%d", (int*)&use_pty);
-      }
-      if (use_pty == UNSET) {  /* use default */
-         if (strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0) {
-            /* by default, qrsh <no command> doesn't use a pty */
-            use_pty = NO;
-         } else {
-            /* by default, qrsh <command> and qlogin use a pty */
-            use_pty = YES;
-         }
-      }
-   }
-   
+   is_job = (strcmp(childname, "job") == 0);
+
    /* Don't care about checkpointing for "commands other than "job" */
-   if (strcmp(childname, "job")) {
-      ckpt_info.type = 0;
+   if (is_job)
+   {
+      ckpt_info.type = ckpt_type;
    }
 
-   if (ISSET(ckpt_info.type, CKPT_REST_KERNEL) && strcmp(childname, "job") == 0) {
-      set_ckpt_restart_command(childname, ckpt_info.type,
-                               rest_command, sizeof(rest_command) -1);
+   /* special case for kernel checkpointing for *jobs* (ie. not prolog, epilog) */
+   if (ISSET(ckpt_info.type, CKPT_REST_KERNEL))
+   {
+#if defined(IRIX)
+      ash_t ash = 0;
+#elif defined(NECSX4) || defined(NECSX5)
+      id_t jobid = 0;
+#elif defined(CRAY)
+      int  jobid = 0;
+#endif
+
+      set_ckpt_restart_command(childname, ckpt_info.type, rest_command, sizeof(rest_command) -1);
+
       shepherd_trace("restarting job from checkpoint arena");
 
 #if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
+
       /* reuse old osjobid for the migrated job and forward this one to ptf */
       shepherd_write_osjobid_file(get_conf_val("ckpt_osjobid"));
 
 #if defined(IRIX)
       sscanf(get_conf_val("ckpt_osjobid"), "%lld", &ash);
       shepherd_trace("reusing old array session handle %lld", ash);
-#elif defined(NECSX4) || defined(NECSX5)
-		sscanf(get_conf_val("ckpt_osjobid"), "%ld", &jobid);
-		shepherd_trace("reusing old super-ux jobid %lld", jobid); 
-#elif defined(CRAY)
+#endif
+
+#if defined(NECSX4) || defined(NECSX5)
+      sscanf(get_conf_val("ckpt_osjobid"), "%ld", &jobid);
+      shepherd_trace("reusing old super-ux jobid %lld", jobid); 
+#endif
+
+#if defined(CRAY)
       sscanf(get_conf_val("ckpt_osjobid"),  "%d", &jobid);
       shepherd_trace("reusing old unicos jobid %d", jobid);
 #endif
-#endif
+
+#endif  /* defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5) */
 
       shepherd_trace("restarting job from checkpoint arena");
       pid = start_async_command("restart", rest_command);
    }
-   else { /* not job or job and not checkpointing */
-      if (g_new_interactive_job_support == false || !is_interactive) {
+   else
+   {
+      /* not job or job and not checkpointing */
+      if (!is_interactive || !g_new_interactive_job_support)
+      {
          pid = fork();
-      } else {
+      }
+      else
+      {
+         ternary_t use_pty = UNSET;
+
          /*
           * Create a pipe to tell child when communication to client is set up
           * and child can start the job.
           */
          ret = pipe(fd_pipe_to_child);
-         shepherd_trace("pipe to child uses fds %d and %d",
-                        fd_pipe_to_child[0], fd_pipe_to_child[1]);
-         if (ret < 0) {
-            shepherd_error(1, "can't create pipe to child! %s (%d)",
-                           strerror(errno), errno);
+
+         shepherd_trace("pipe to child uses fds %d and %d", fd_pipe_to_child[0], fd_pipe_to_child[1]);
+
+         if (ret < 0)
+         {
+            shepherd_error(1, "can't create pipe to child! %s (%d)", strerror(errno), errno);
             return 1;
+         }
+
+         /* Try to read "pty" from config, if it is not there or set to "2", use default */
+         {
+            char *conf_val = get_conf_val("pty");
+
+            if (conf_val != NULL)
+            {
+               sscanf(conf_val, "%d", (int*)&use_pty);
+            }
+
+            if (use_pty == UNSET)
+            {
+               if (strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0)
+               {
+                  use_pty = NO;        /* by default, qrsh <no command> doesn't use a pty */
+               }
+               else
+               {
+                  use_pty = YES;       /* by default, qrsh <command> and qlogin use a pty */
+               }
+            }
          }
 
          /*
@@ -1092,19 +1227,26 @@ int ckpt_type
           * child gets the pty slave. The slave pty becomes stdin/stdout/stderr
           * of the child.
           */
-         if (use_pty == YES) {
+         if (use_pty == YES)
+         {
             shepherd_trace("calling fork_pty()");
             pid = fork_pty(&fd_pty_master, fd_pipe_err, &err_msg);
-         } else {
+         }
+         else
+         {
             shepherd_trace("calling fork_no_pty()");
             pid = fork_no_pty(fd_pipe_in, fd_pipe_out, fd_pipe_err, &err_msg);
          }
       } 
 
-      if (pid==0) { /* child */
-         if (g_new_interactive_job_support == true && is_interactive) {
+      if (pid==0)
+      {
+         /* child */
+         if (is_interactive && g_new_interactive_job_support)
+         {
             ret = wait_until_parent_has_registered_to_server(fd_pipe_to_child);
-            if (ret < 0) {
+            if (ret < 0)
+            {
                return ret;
             }
          }
@@ -1113,12 +1255,15 @@ int ckpt_type
       }
    }
 
-   if (pid == -1) {
-      if (g_new_interactive_job_support == false || !is_interactive) {
+   if (pid == -1)
+   {
+      if (!is_interactive || !g_new_interactive_job_support)
+      {
          shepherd_error(1, "can't fork \"%s\"", childname);
-      } else {
-         shepherd_error(1, "can't fork \"%s\": %s", 
-            childname, sge_dstring_get_string(&err_msg));
+      }
+      else
+      {
+         shepherd_error(1, "can't fork \"%s\": %s", childname, sge_dstring_get_string(&err_msg));
       }
    }
 
@@ -1133,54 +1278,66 @@ int ckpt_type
     * Kill job if we can't write job_pid file and exit with error
     * sets ckpt_pid to 0 for non kernel level checkpointing jobs
     */
-   if (!strcmp(childname, "job"))
+   if (is_job)
       handle_job_pid(ckpt_info.type, pid, &(ckpt_info.pid));
 
    /* Does not affect pe/prolog/epilog etc. since ckpt_type is set to 0 */
    set_ckpt_params(ckpt_info.type,
-                   ckpt_command, 
-                   sizeof(ckpt_command) - 1,
-                   migr_command,
-                   sizeof(migr_command) - 1,
-                   clean_command,
-                   sizeof(clean_command) - 1,
+                   ckpt_command,  sizeof(ckpt_command)  - 1,
+                   migr_command,  sizeof(migr_command)  - 1,
+                   clean_command, sizeof(clean_command) - 1,
                    &(ckpt_info.interval));
    
-   if (received_signal > 0 && received_signal != SIGALRM) {
+   if (received_signal > 0 && received_signal != SIGALRM)
+   {
       int sig = map_signal(received_signal);
       int tmp_ret = add_signal(sig);
 
       received_signal = 0;
-      if (tmp_ret) {
+
+      if (tmp_ret)
+      {
          shepherd_trace("failed to store received signal");
       }
    }
  
-   if (timeout) {
+   if (timeout)
+   {
       shepherd_trace("using signal delivery delay of %d seconds", timeout);
       alarm(timeout);
-   } else {
+   }
+   else
+   {
       int number_of_signals = get_n_sigs();
 
-      if (number_of_signals > 0) {
+      if (number_of_signals > 0)
+      {
          shepherd_trace("there are %d signals to deliver. Wait until "
                                 "job has been started.", number_of_signals);
          alarm(10);
       }
    }
 
-   if (ckpt_info.type) {
+   if (ckpt_info.type)
+   {
       shepherd_trace("parent: %s-pid: %d - ckpt_pid: %d - "
                      "ckpt_interval: %d - ckpt_signal %d", childname, 
                      pid, ckpt_info.pid, ckpt_info.interval, ckpt_signal);
-   } else {
+   }
+   else
+   {
       shepherd_trace("parent: %s-pid: %d", childname, pid);
    }
 
-   if (g_new_interactive_job_support == false || !is_interactive) {
+   if (!is_interactive || !g_new_interactive_job_support)
+   {
       /* Wait until child finishes ----------------------------------------*/         
       status = wait_my_child(pid, childname, timeout, &ckpt_info, &rusage);
-   } else { /* g_new_interactive_job_support == true && is_interactive */
+   }
+   else
+   {
+      /* g_new_interactive_job_support == true && is_interactive */
+
       ijs_fds_t ijs_fds;
 
       ijs_fds.pty_master    = fd_pty_master;
@@ -1204,23 +1361,30 @@ int ckpt_type
 
    shepherd_trace("reaped \"%s\" with pid %d", childname, pid);
 
-   if (ckpt_info.type) {
+   if (ckpt_info.type)
+   {
       /* 
        * empty file is a hint to reschedule that job. If we already have a
        * checkpoint in the arena there is a dummy string in the file
        */
-      if (!checkpointed_file_exists()) {
+      if (!checkpointed_file_exists())
+      {
          create_checkpointed_file(0);
       }
    }
 
-   if (WIFSIGNALED(status)) {
+   if (WIFSIGNALED(status))
+   {
+      int core_dumped;
+
       shepherd_trace("%s exited due to signal", childname);
 
-      if (ckpt_info.type != 0 && signalled_ckpt_job == false) {
+      if (ckpt_info.type != 0 && !signalled_ckpt_job)
+      {
          unlink("checkpointed");
          shepherd_trace("%s exited due to signal but not due to checkpoint", childname);
-         if (ISSET(ckpt_info.type, CKPT_KERNEL)) {
+         if (ISSET(ckpt_info.type, CKPT_KERNEL))
+         {
             shepherd_trace("starting ckpt clean command");
             start_clean_command(clean_command);
          }
@@ -1232,14 +1396,13 @@ int ckpt_type
 #else
       core_dumped = status & 80;
 #endif
-      if (timeout && child_signal == SIGALRM) {
-         shepherd_trace("%s expired timeout of %d seconds and was "
-                        "killed%s", childname, timeout, 
-                        core_dumped ? " (core dumped)": "");
-      } else {
-         shepherd_trace("%s signaled: %d%s", childname, 
-                        child_signal, 
-                        core_dumped ? " (core dumped)": "");
+      if (timeout && child_signal == SIGALRM)
+      {
+         shepherd_trace("%s expired timeout of %d seconds and was killed%s", childname, timeout, core_dumped ? " (core dumped)": "");
+      }
+      else
+      {
+         shepherd_trace("%s signaled: %d%s", childname, child_signal, core_dumped ? " (core dumped)": "");
       }
 
       exit_status = 128 + child_signal;
@@ -1247,54 +1410,67 @@ int ckpt_type
       wait_status = SGE_SET_WSIGNALED(wait_status, wexit_flag_true);
       wait_status = SGE_SET_WCOREDUMP(wait_status, core_dumped);
       wait_status = SGE_SET_WSIGNAL(wait_status, sge_map_signal(child_signal));
-   } else {
+   }
+   else
+   {
       shepherd_trace("%s exited not due to signal", childname);
 
-      if (ckpt_info.type != 0 && signalled_ckpt_job == false) {
+      if (ckpt_info.type != 0 && !signalled_ckpt_job)
+      {
          shepherd_trace("checkpointing job exited normally");
+
          unlink("checkpointed");
-         if (ISSET(ckpt_info.type, CKPT_KERNEL)) {
+
+         if (ISSET(ckpt_info.type, CKPT_KERNEL))
+         {
             shepherd_trace("starting ckpt clean command");
             start_clean_command(clean_command);
          }
       }
 
-      if (WIFEXITED(status)) {
+      if (WIFEXITED(status))
+      {
          exit_status = WEXITSTATUS(status);
-         shepherd_trace("%s exited with status %d%s",
-            childname, exit_status, 
-            (exit_status==RESCHEDULE_EXIT_STATUS || exit_status==APPERROR_EXIT_STATUS)?
-            " -> rescheduling":"");
+         shepherd_trace("%s exited with status %d%s", childname, exit_status,
+                        (exit_status==RESCHEDULE_EXIT_STATUS || exit_status==APPERROR_EXIT_STATUS)? " -> rescheduling":"");
 
          wait_status = SGE_SET_WEXITED(wait_status, wexit_flag_true);
          wait_status = SGE_SET_WEXITSTATUS(wait_status, exit_status);
-
-      } else {
+      }
+      else
+      {
          /* should be virtually impossible, see wait_my_child() why */
          exit_status = -1;
-         shepherd_trace("%s did not exit and was not signaled", 
-                                childname);
+         shepherd_trace("%s did not exit and was not signaled", childname);
       }
    }
 
-   if (!pidp || exit_status != 0) {
+   if (!pidp || exit_status)
+   {
       /* Kill all processes of the process group of the forked child.
          This is to ensure that nothing hangs around. */
-      if (!strcmp("job", childname)) {
-         if (ckpt_info.pid != 0)   {
+      if (is_job)
+      {
+         if (ckpt_info.pid != 0)
+         {
             shepherd_signal_job(-ckpt_info.pid, SIGKILL);
-         } else {
+         }
+         else
+         {
             shepherd_signal_job(-pid, SIGKILL);
          }
       }
-   } else {
+   }
+   else
+   {
       *pidp = pid;
    }
 
    /*
    ** write no usage in case of error (son() has written to error file)
    */
-   if (!SGE_STAT("exit_status", &buf) && buf.st_size) {
+   if (!SGE_STAT("exit_status", &buf) && buf.st_size)
+   {
       /*
       ** in this case the child didnt get to the exec call or it failed
       ** the status that waitpid and finally start_child returns is
@@ -1304,15 +1480,17 @@ int ckpt_type
       return exit_status;
    }
 
-   if (!strcmp("job", childname)) {
+   if (is_job)
+   {
       /*
        * The new interactive job support uses the qrsh_starter in case of
        * qrsh <with command> jobs.
        */
       if (g_new_interactive_job_support == false ||
-          (g_new_interactive_job_support == true &&
-           strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0)) {
-         if (search_conf_val("rsh_daemon") != NULL) {
+          (g_new_interactive_job_support == true && strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0))
+      {
+         if (search_conf_val("rsh_daemon") != NULL)
+         {
             int qrsh_exit_code = -1;
             int success = 1; 
 
@@ -1321,33 +1499,39 @@ int ckpt_type
             delete_qrsh_pid_file();
             sge_switch2admin_user();
 
-            if (success != 0) {
+            if (success != 0)
+            {
                /* This case should never happen */
                /* See Issue 1679 */
                shepherd_trace("can't get qrsh_exit_code");
             }
 
             /* normal exit */
-            if (WIFEXITED(qrsh_exit_code)) {
+            if (WIFEXITED(qrsh_exit_code))
+            {
                const char *qrsh_error;
 
                exit_status = WEXITSTATUS(qrsh_exit_code);
 
                qrsh_error = get_error_of_qrsh_starter();
-               if (qrsh_error != NULL) {
+
+               if (qrsh_error != NULL)
+               {
                   shepherd_error(1, "startup of qrsh job failed: "SFN, qrsh_error);
                   FREE(qrsh_error);
-               } else {
+               }
+               else
+               {
                   shepherd_trace("job exited normally, exit code is %d", exit_status);
                }
             }
 
             /* qrsh job was signaled */
-            if (WIFSIGNALED(qrsh_exit_code)) {
+            if (WIFSIGNALED(qrsh_exit_code))
+            {
                child_signal = WTERMSIG(qrsh_exit_code);
                exit_status = 128 + child_signal;
-               shepherd_trace("job exited on signal %d, exit code is %d",
-                              child_signal, exit_status);
+               shepherd_trace("job exited on signal %d, exit code is %d", child_signal, exit_status);
             }
          }
       }
@@ -1360,20 +1544,34 @@ int ckpt_type
       /* this is SEMPA stuff */
       notify_tasker(exit_status);
 
+      /* exit status before conversion */
+      if (status_env)
+      {
+        char buffer[16];
+
+        snprintf(buffer, sizeof(buffer), "%d", exit_status);
+
+        sge_set_env_value(status_env, buffer);
+      }
+
       exit_status_for_qrsh = exit_status;
 
       /* 
        *  we are not interested in exit status of job
        *  except it was the RESCHEDULE_EXIT_STATUS or APPERROR_EXIT_STATUS
        */
-      if( exit_status != RESCHEDULE_EXIT_STATUS
-       && exit_status != APPERROR_EXIT_STATUS ) {
-         exit_status = 0;
-      } else if( exit_status == RESCHEDULE_EXIT_STATUS ) {
+      if (exit_status == RESCHEDULE_EXIT_STATUS )
+      {
          shepherd_trace("keep RESCHEDULE_EXIT_STATUS");
-      } else if( exit_status == APPERROR_EXIT_STATUS ) {
+      }
+      else if (exit_status == APPERROR_EXIT_STATUS )
+      {
          shepherd_trace("keep APPERROR_EXIT_STATUS");
       }
+      else
+      {
+         exit_status = 0;
+      } 
 
    } /* if child == job */
 
@@ -1413,29 +1611,30 @@ int ckpt_type
 *  NOTES
 *     MT-NOTE: get_remote_host_and_port_from_config() is not MT safe 
 *******************************************************************************/
-static int get_remote_host_and_port_from_config(
-char **hostname,
-int *port,
-dstring *err_msg)
+static int get_remote_host_and_port_from_config(char **hostname, int *port, dstring *err_msg)
 {
    char *address;
    char *separator;
 
-   if (err_msg == NULL) {
+   if (err_msg == NULL)
+   {
       return 1;
    }
 
    address = get_conf_val("qrsh_control_port");
-   if (address == NULL) {
+   if (address == NULL)
+   {
       sge_dstring_sprintf(err_msg, "config does not contain entry for qrsh_control_port");
       return 2;
    }
+
    /* address now points to the configuration buffer, but we want to keep it
     * independently of the configuration buffer, so we copy it.
     */
    address = strdup(address);
    separator = strchr(address, ':');
-   if (separator == NULL) {
+   if (separator == NULL)
+   {
       sge_dstring_sprintf(err_msg, "illegal value for qrsh_control_port: "
                         "\"%s\". Should be host:port", address);
       FREE(address);
@@ -1491,7 +1690,8 @@ ckpt_info_t   *p_ckpt_info,  /* IN: data for checkpointing handling */
 ijs_fds_t     *p_ijs_fds,    /* IN: file descriptors needed for IJS */
 struct rusage *rusage,       /* OUT: accounting information */
 dstring       *err_msg       /* OUT: error message - if any */
-) {
+)
+{
    char    *job_owner;
    char    *remote_host = NULL;
    bool    csp_mode     = false;
@@ -1504,7 +1704,8 @@ dstring       *err_msg       /* OUT: error message - if any */
 
    /* read destination host and port from config */
    ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, err_msg);
-   if (ret != 0 || remote_host == NULL || remote_port == 0) {
+   if (ret != 0 || remote_host == NULL || remote_port == 0)
+   {
       shepherd_error(1, "startup of qrsh job failed: "SFN"",
                      sge_dstring_get_string(err_msg));
    }
@@ -1516,7 +1717,8 @@ dstring       *err_msg       /* OUT: error message - if any */
     * a very, very slow drive.
     */
    if (strcasecmp(get_conf_val("csp"), "true") == 0 ||
-       strcasecmp(get_conf_val("csp"), "1") == 0) {
+       strcasecmp(get_conf_val("csp"), "1") == 0)
+   {
       csp_mode = true;
    }
    shepherd_trace("csp = %d", csp_mode);
@@ -1524,7 +1726,8 @@ dstring       *err_msg       /* OUT: error message - if any */
    ret = parent_loop(pid, childname, timeout, p_ckpt_info, p_ijs_fds, job_owner,
             remote_host, remote_port, csp_mode, &exit_status, rusage, err_msg);
    FREE(remote_host);
-   if (ret != 0) {
+   if (ret != 0)
+   {
       shepherd_error(1, "startup of qrsh job failed: "SFN"",
                      sge_dstring_get_string(err_msg));
    }
@@ -1543,10 +1746,12 @@ static void verify_method(const char *method_name)
 {
    char *override_signal;
 
-   if ((override_signal = search_nonone_conf_val(method_name))) {
+   if ((override_signal = search_nonone_conf_val(method_name)))
+   {
 
       if (override_signal[0] != '/' && 
-         shepherd_sys_str2signal(override_signal)<0) {
+         shepherd_sys_str2signal(override_signal)<0)
+      {
          shepherd_error(1, "cannot convert " SFN " " SFQ" into a "
                               "valid signal number at this machine", 
                               method_name, override_signal);
@@ -1595,31 +1800,39 @@ static void forward_signal_to_job(int pid, int timeout,
    int sig;
    static int replace_qrsh_pid = 1; /* cache */
 
-   if (received_signal==SIGALRM) {
+   if (received_signal==SIGALRM)
+   {
       /* a timeout expired */
-      if (timeout) {
+      if (timeout)
+      {
          shepherd_trace("SIGALRM with timeout");
-         if (get_n_sigs() > 0) {
+         if (get_n_sigs() > 0)
+         {
             /* kill directly - a timeout of a script expired */
             shepherd_trace("timeout expired - killing process");
             shepherd_signal_job(-pid, SIGKILL);
          }
          return;
-      } else {
+      }
+      else
+      {
          shepherd_trace("SIGALRM without timeout");
       }
       received_signal = 0;
    }
 
    /* store signal if we got one */
-   if (received_signal) {
-      shepherd_trace("forward_signal_to_job(): mapping signal %d %s",
-         received_signal, sge_sys_sig2str(received_signal));
+   if (received_signal)
+   {
+      shepherd_trace("forward_signal_to_job(): mapping signal %d %s", received_signal, sge_sys_sig2str(received_signal));
+
       sig = map_signal(received_signal);
 
       received_signal = 0;
+
       /* store signal in ring buffer */
-      if (add_signal(sig)) {
+      if (add_signal(sig))
+      {
          shepherd_trace("failed to store received signal");
          return; 
       }     
@@ -1629,11 +1842,15 @@ static void forward_signal_to_job(int pid, int timeout,
    ** jg: in qrsh case, replace job_pid with pid from qrsh_starter
    */
    /* cached info exists? */
-   if (replace_qrsh_pid) {
+   if (replace_qrsh_pid)
+   {
       /* do we signal a qrsh job? */
-      if (search_conf_val("qrsh_pid_file") == NULL) {
+      if (search_conf_val("qrsh_pid_file") == NULL)
+      {
          replace_qrsh_pid = 0;
-      } else {
+      }
+      else
+      {
          char *qrsh_pid_file;
          pid_t qrsh_pid;
 
@@ -1647,10 +1864,14 @@ static void forward_signal_to_job(int pid, int timeout,
    }
     
    /* forward signals */
-   if (!timeout) { /* signals for scripts with timeouts are stored */
+   if (!timeout)
+   {
+      /* signals for scripts with timeouts are stored */
       sig = get_signal();
-      while (sig != -1 && sig != 0) {
-         switch (sig) {
+      while (sig != -1 && sig != 0)
+      {
+        switch (sig)
+        {
          case SIGCONT:
             shepherd_deliver_signal(sig, pid, postponed_signal,
                                     remaining_alarm, &(ctrl_pid[0]));
@@ -1685,8 +1906,8 @@ static void forward_signal_to_job(int pid, int timeout,
             shepherd_trace("kill(%d, %s)", -pid, sge_sys_sig2str(sig));
             shepherd_signal_job(-pid, sig);
             break;
-         }
-         sig = get_signal();
+        }
+        sig = get_signal();
       }
    }
 }
@@ -1727,15 +1948,18 @@ static const char *notify_name[] = {
 *  INPUTS
 *     int pid               - the signal 
 *******************************************************************************/
-static const char* shepherd_find_method(int sig) {
-   
+static const char* shepherd_find_method(int sig)
+{
    int index;
 
    /*
     * Find names of variables stored in the config file
     */
-   for (index = 0; method_name[index] != NULL; index++) {
-      if (signal_array[index] == sig) {
+
+   for (index = 0; method_name[index] != NULL; index++)
+   {
+      if (signal_array[index] == sig)
+      {
          break;
       }
    }
@@ -1756,15 +1980,17 @@ static const char* shepherd_find_method(int sig) {
 *  INPUTS
 *     int pid               - the signal 
 *******************************************************************************/
-static const char* shepherd_find_notify(int sig) {
-   
+static const char* shepherd_find_notify(int sig)
+{
    int index;
 
    /*
     * Find names of variables stored in the config file
     */
-   for (index = 0; notify_name[index] != NULL; index++) {
-      if (signal_array[index] == sig) {
+   for (index = 0; notify_name[index] != NULL; index++)
+   {
+      if (signal_array[index] == sig)
+      {
          break;
       }
    }
@@ -1824,11 +2050,12 @@ void shepherd_deliver_signal(int sig, int pid, int *postponed_signal,
    /*
     * Job notification
     */
-   if (sig == SIGSTOP || sig == SIGKILL) {
+   if (sig == SIGSTOP || sig == SIGKILL)
+   {
       int seconds = 0;
 
-      if (shepconf_has_to_notify_before_signal(&seconds)) {
-
+      if (shepconf_has_to_notify_before_signal(&seconds))
+      {
          /* sig  *postponed_signal
           *
           * STOP KILL    --> Termination in progress
@@ -1841,35 +2068,45 @@ void shepherd_deliver_signal(int sig, int pid, int *postponed_signal,
           */
          if ((sig == SIGSTOP && *postponed_signal == SIGKILL) ||
              (sig == SIGKILL && *postponed_signal == SIGKILL) ||
-             (sig == SIGSTOP && *postponed_signal == SIGSTOP)) {
+             (sig == SIGSTOP && *postponed_signal == SIGSTOP))
+         {
             /*
              * Detect and prevent repeated initiation of notify mechanism
              * as this can delay termination endlessly
              */
-            if (sig == *postponed_signal) {
+            if (sig == *postponed_signal)
+            {
                shepherd_trace("ignoring repeated %s notification", 
                               sge_sys_sig2str(*postponed_signal));
-            } else if (sig == SIGSTOP) {
+            }
+            else if (sig == SIGSTOP)
+            {
                shepherd_trace("termination in progress - ignoring %s notification", 
                               sge_sys_sig2str(*postponed_signal)); 
             }
             alarm(remaining_alarm);
             return;
-         } else {
+         }
+         else
+         {
             int notify_signal = 0;
 
-            if (shepconf_has_notify_signal(notify_name,&notify_signal)) {
+            if (shepconf_has_notify_signal(notify_name, &notify_signal))
+            {
                shepherd_trace("kill(%d, %s) -> notification "
                               "for delayed (%d s) signal %s", -pid,
                               sge_sys_sig2str(notify_signal),
                               seconds, sge_sys_sig2str(sig));
-            } else {
+            }
+            else
+            {
                shepherd_trace("No notif. signal -> notification "
                               "for delayed (%d s) signal %s",
                               seconds, sge_sys_sig2str(sig));
             }
 
-            if (notify_signal) {
+            if (notify_signal)
+            {
                *postponed_signal = sig;
                shepherd_signal_job(-pid, notify_signal);
                alarm(notify);
@@ -1914,26 +2151,33 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
     *    b) Userdefined method
     *    c) Default signal 
     */
-   if (shepconf_has_userdef_signal(method_name, &new_sig)) {
+   if (shepconf_has_userdef_signal(method_name, &new_sig))
+   {
       shepherd_trace("kill(%d, %s) -> overriddes kill(%d, %s)",
                      -pid, sge_sys_sig2str(new_sig),
                      -pid, sge_sys_sig2str(sig));
       shepherd_signal_job(-pid, new_sig);
-   } else if (shepconf_has_userdef_method(method_name, &method)) {
-      shepherd_trace("%s -> overriddes kill(%d, %s)",
-                     sge_dstring_get_string(&method), -pid,
-                     sge_sys_sig2str(sig));
-      if (*ctrl_pid == -999) {
+   }
+   else if (shepconf_has_userdef_method(method_name, &method))
+   {
+      shepherd_trace("%s -> overriddes kill(%d, %s)", sge_dstring_get_string(&method), -pid, sge_sys_sig2str(sig));
+
+      if (*ctrl_pid == -999)
+      {
          char command[10000];
 
          replace_params(sge_dstring_get_string(&method), command,
                         sizeof(command)-1, ctrl_method_variables);
          *ctrl_pid = start_async_command(method_name, command);
-      } else {
+      }
+      else
+      {
          shepherd_trace("Skipped start of suspend: previous command "
                         "(pid= "pid_t_fmt") is still active", *ctrl_pid);
       }
-   } else {
+   }
+   else
+   {
       shepherd_trace("kill(%d, %s)", -pid, sge_sys_sig2str(sig));
       shepherd_signal_job(-pid, sig);
    }
@@ -2051,15 +2295,20 @@ static int check_ckpttype(void)
 
    ckpt_type = 0;
    if (!ckpt)
+   {
       ckpt_type = 0;
+   }
    else if (!(ckpt_interface && ckpt_restarted &&  
-       ckpt_command && ckpt_migr_command && ckpt_rest_command &&
-       ckpt_clean_command && ckpt_pid && ckpt_osjobid && ckpt_dir && ckpt_signal_str ))
+             ckpt_command && ckpt_migr_command && ckpt_rest_command &&
+             ckpt_clean_command && ckpt_pid && ckpt_osjobid && ckpt_dir && ckpt_signal_str ))
+   {
       ckpt_type = -1;
+   }
    else if (!strcasecmp(ckpt_interface, "hibernator") ||
             !strcasecmp(ckpt_interface, "cpr") ||
             !strcasecmp(ckpt_interface, "cray-ckpt") ||
-            !strcasecmp(ckpt_interface, "application-level")) {
+            !strcasecmp(ckpt_interface, "application-level"))
+   {
 
       ckpt_type = CKPT | CKPT_KERNEL;
 
@@ -2088,7 +2337,8 @@ static int check_ckpttype(void)
             ckpt_type = -1;
       }
    }
-   else if (!strcasecmp(ckpt_interface, "transparent")) {
+   else if (!strcasecmp(ckpt_interface, "transparent"))
+   {
       ckpt_type = CKPT | CKPT_TRANS;
 
       if (atoi(ckpt_restarted) > 1)
@@ -2102,7 +2352,8 @@ static int check_ckpttype(void)
             ckpt_type = -1;
       }      
    }
-   else if (!strcasecmp(ckpt_interface, "userdefined")) {
+   else if (!strcasecmp(ckpt_interface, "userdefined"))
+   {
       ckpt_type = CKPT | CKPT_USER;
 
       if (atoi(ckpt_restarted) > 1)
@@ -2142,23 +2393,30 @@ static void handle_signals_and_methods(
    remaining_alarm = alarm(0);
      
    /* got a signal? should compare errno with EINTR */
-   if (npid == -1) {
+   if (npid == -1)
+   {
       /* got SIGALRM */ 
-      if (received_signal == SIGALRM) {
+      if (received_signal == SIGALRM)
+      {
          /* notify: postponed signals SIGSTOP, SIGKILL */
-         if (*postponed_signal) {
+         if (*postponed_signal)
+         {
             shepherd_trace("kill(%d, %s) -> delivering postponed signal", -pid, 
                            sge_sys_sig2str(*postponed_signal));
             
             shepconf_deliver_signal_or_method(*postponed_signal, pid, ctrl_pid);
             /*shepherd_signal_job(-pid, postponed_signal);*/
             *postponed_signal = 0;
-         } else {
+         }
+         else
+         {
             shepherd_trace("no postponed signal");
 
             /* userdefined ckpt has always ckpt_interval = 0 */ 
-            if (p_ckpt_info->interval) {
-               if (p_ckpt_info->type & CKPT_KERNEL) {
+            if (p_ckpt_info->interval)
+            {
+               if (p_ckpt_info->type & CKPT_KERNEL)
+               {
                   shepherd_trace("initiate regular kernel level checkpoint");
                   *ckpt_cmd_pid = start_async_command("ckpt", ckpt_command);
                   rest_ckpt_interval = 0;
@@ -2168,13 +2426,17 @@ static void handle_signals_and_methods(
                   }
                   else
                      *inCkpt = 1;
-               } else if (p_ckpt_info->type & CKPT_TRANS) {
+               }
+               else if (p_ckpt_info->type & CKPT_TRANS)
+               {
                   shepherd_trace("send checkpointing signal to transparent "
                                  "checkpointing job");
                   sge_switch2start_user();
                   kill(-pid, ckpt_signal);
                   sge_switch2admin_user();
-               } else if (p_ckpt_info->type & CKPT_USER) {
+               }
+               else if (p_ckpt_info->type & CKPT_USER)
+               {
                   shepherd_trace("send checkpointing signal to userdefined "
                                  "checkpointing job");
                   sge_switch2start_user();
@@ -2185,43 +2447,58 @@ static void handle_signals_and_methods(
             forward_signal_to_job(pid, timeout, postponed_signal,
                                   remaining_alarm, ctrl_pid);
          }
-      } else if (p_ckpt_info->pid && (received_signal == SIGTTOU)) {
+      }
+      else if (p_ckpt_info->pid && (received_signal == SIGTTOU))
+      {
          shepherd_trace("initiate checkpoint due to migration request");
          rest_ckpt_interval = 0; /* disable regular checkpoint */
-         if (!(*inCkpt)) {
+         if (!(*inCkpt))
+         {
             *migr_cmd_pid = start_async_command("migrate", migr_command);
-            if (*migr_cmd_pid == -1) {
+            if (*migr_cmd_pid == -1)
+            {
                *migr_cmd_pid = -999;
-            } else {
+            }
+            else
+            {
                *inCkpt = 1;
                signalled_ckpt_job = 1;
             }
-         } else {
+         }
+         else
+         {
             /* kill job after end of ckpt_command */
             *kill_job_after_checkpoint = 1; 
          }
-      } else if (received_signal != 0 || *postponed_signal != 0) { /* received any other signal */
+      }
+      else if (received_signal != 0 || *postponed_signal != 0)
+      {
+         /* received any other signal */
 #if defined(INTERIX)
          sge_set_environment();
-         if(strcmp(childname, "job") == 0 &&
-            wl_get_GUI_mode(get_conf_val("display_win_gui")) == true) {
+         if (strcmp(childname, "job") == 0 &&
+             wl_get_GUI_mode(get_conf_val("display_win_gui")) == true)
+         {
             /*
              * forward SIGKILL, swallow all other signals
              */
             int sig = map_signal(received_signal);
-            if(sig == SIGKILL) { 
+            if (sig == SIGKILL)
+            { 
                char errormsg[MAX_STRING_SIZE];
                wl_forward_signal_to_job(get_conf_val("job_id"),
-                                     &sig,
-                                     errormsg, MAX_STRING_SIZE);
+                                     &sig, errormsg, MAX_STRING_SIZE);
             }
-         } else
+         }
+         else
 #endif
          {
             forward_signal_to_job(pid, timeout, postponed_signal, 
                                   remaining_alarm, ctrl_pid);
          }
-      } else {
+      }
+      else
+      {
          /*
           * Didn't receive a signal, just continue, 
           * the following code is prepared for it.
@@ -2230,43 +2507,54 @@ static void handle_signals_and_methods(
    }
          
    /* here we reap the control action methods */
-   for (i=0; i<3; i++) {
+   for (i=0; i<3; i++)
+   {
       static char *cm_descr[] = {
          "resume",
          "suspend",
          "terminate"
       };
-      if ((npid == ctrl_pid[i]) && ((WIFSIGNALED(status) || WIFEXITED(status)))) {
+      if ((npid == ctrl_pid[i]) && ((WIFSIGNALED(status) || WIFEXITED(status))))
+      {
          shepherd_trace("reaped %s command", cm_descr[i]);
          ctrl_pid[i] = -999;
       }
    }
 
    /* here we reap the checkpoint command */
-   if ((npid == *ckpt_cmd_pid) && ((WIFSIGNALED(status) || WIFEXITED(status)))) {
+   if ((npid == *ckpt_cmd_pid) && ((WIFSIGNALED(status) || WIFEXITED(status))))
+   {
       *inCkpt = 0;
       shepherd_trace("reaped checkpoint command");
+
       if (!(*kill_job_after_checkpoint))
-         *rest_ckpt_interval = p_ckpt_info->interval; 
+         *rest_ckpt_interval = p_ckpt_info->interval;
+
       *ckpt_cmd_pid = -999;
-      if (WIFEXITED(status)) {
+
+      if (WIFEXITED(status))
+      {
          shepherd_trace("checkpoint command exited normally");
-         if (WEXITSTATUS(status)==0 && !(*inArena)) {
+         if (WEXITSTATUS(status)==0 && !(*inArena))
+         {
             shepherd_trace("checkpoint is in the arena after regular checkpoint");
             create_checkpointed_file(1);
             *inArena = 1;
          }                     
       }
+
       /* A migration request occured and we just did a regular checkpoint */
-      if (*kill_job_after_checkpoint) {
+      if (*kill_job_after_checkpoint)
+      {
           shepherd_trace("killing job after regular checkpoint due to migration request");
           shepherd_signal_job(-pid, SIGKILL);   
       }    
    }
 
    /* here we reap the migration command */
-   if ((npid == *migr_cmd_pid) && 
-       ((WIFSIGNALED(status) || WIFEXITED(status)))) {
+   if ( (npid == *migr_cmd_pid) && 
+        (WIFSIGNALED(status) || WIFEXITED(status)) )
+   {
       /*
        * If the migrate command exited but the job did 
        * not stop (due to error in the migrate script) we have
@@ -2274,13 +2562,15 @@ static void handle_signals_and_methods(
        * commands will be executed (qmod -f -s).
        */
       *inCkpt = 0;
-      shepherd_trace("if jobs and shepherd do not exit there is some error "
-                     "in the migrate command");
+      shepherd_trace("if jobs and shepherd do not exit there is some error in the migrate command");
       shepherd_trace("reaped migration checkpoint command");
+
       *migr_cmd_pid = -999;
-      if (WIFEXITED(status)) {
+      if (WIFEXITED(status))
+      {
          shepherd_trace("checkpoint command exited normally");
-         if (WEXITSTATUS(status) == 0 && !(*inArena)) {
+         if (WEXITSTATUS(status) == 0 && !(*inArena))
+         {
             shepherd_trace("checkpoint is in the arena after migration request");
             create_checkpointed_file(1);
             *inArena = 1;
@@ -2289,13 +2579,15 @@ static void handle_signals_and_methods(
    }
   
    /* reap job */
-   if ((npid == pid) && ((WIFSIGNALED(status) || WIFEXITED(status)))) {
+   if ((npid == pid) && ((WIFSIGNALED(status) || WIFEXITED(status))))
+   {
       shepherd_trace("%s exited with exit status %d", childname, WEXITSTATUS(status));
       *job_status = status;
       *job_pid = -999;
    }   
 
-   if ((npid == coshepherd_pid) && ((WIFSIGNALED(status) || WIFEXITED(status)))) {
+   if ((npid == coshepherd_pid) && (WIFSIGNALED(status) || WIFEXITED(status)) )
+   {
       shepherd_trace("reaped sge_coshepherd");
       coshepherd_pid = -999;
    }   
@@ -2307,7 +2599,8 @@ const char *childname,     /* "job", "pe_start", ...     */
 int timeout,               /* used for prolog/epilog script, 0 for job */
 ckpt_info_t *p_ckpt_info,  /* infos used for checkpointing */
 struct rusage *rusage      /* accounting information */
-) {
+)
+{
    int i, npid, status, job_status;
    int ckpt_cmd_pid, migr_cmd_pid;
    int rest_ckpt_interval;
@@ -2335,10 +2628,13 @@ struct rusage *rusage      /* accounting information */
    rest_ckpt_interval = p_ckpt_info->interval;
 
    /* Write info that we already have a checkpoint in the arena */
-   if (ISSET(p_ckpt_info->type, CKPT_REST_KERNEL)) {
+   if (ISSET(p_ckpt_info->type, CKPT_REST_KERNEL))
+   {
       inArena = 1;
       create_checkpointed_file(1);
-   } else {
+   }
+   else
+   {
       inArena = 0;
    }
 
@@ -2346,8 +2642,10 @@ struct rusage *rusage      /* accounting information */
    times(&t1);
 #endif
    
-   do {
-      if (p_ckpt_info->interval != 0 && rest_ckpt_interval != 0) {
+   do
+   {
+      if (p_ckpt_info->interval != 0 && rest_ckpt_interval != 0)
+      {
          alarm(rest_ckpt_interval);
       }
 
@@ -2384,17 +2682,20 @@ struct rusage *rusage      /* accounting information */
       }
 #endif
 
-      if (npid == -1) {
+      if (npid == -1)
+      {
          shepherd_trace("wait3 returned -1");
-         if (errno == ECHILD) {
+         if (errno == ECHILD)
+         {
             shepherd_trace("all childs have exited, quit wait3() loop.");
             break;
          }
-      } else {
+      }
+      else
+      {
          shepherd_trace("wait3 returned %d (status: %d; WIFSIGNALED: %d, "
                         " WIFEXITED: %d, WEXITSTATUS: %d)", npid, status,
-                        WIFSIGNALED(status), WIFEXITED(status),
-                        WEXITSTATUS(status));
+                        WIFSIGNALED(status), WIFEXITED(status), WEXITSTATUS(status));
       }
 
       handle_signals_and_methods(
@@ -2461,16 +2762,19 @@ static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
    strcpy(migr_command, "none");
    strcpy(clean_command,"none");
 
-   if (ckpt_type & CKPT_KERNEL) {
+   if (ckpt_type & CKPT_KERNEL)
+   {
       cmd = get_conf_val("ckpt_command");
-      if (strcasecmp("none", cmd)) {
+      if (strcasecmp("none", cmd))
+      {
          shepherd_trace(cmd);
          replace_params(cmd, ckpt_command, ckpt_len, ckpt_variables);
          shepherd_trace(ckpt_command);
       }
 
       cmd = get_conf_val("ckpt_migr_command");
-      if (strcasecmp("none", cmd)) {
+      if (strcasecmp("none", cmd))
+      {
          shepherd_trace(cmd);
          replace_params(cmd, migr_command, migr_len,
                         ckpt_variables);
@@ -2478,7 +2782,8 @@ static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
       }
 
       cmd = get_conf_val("ckpt_clean_command");
-      if (strcasecmp("none", cmd)) {
+      if (strcasecmp("none", cmd))
+      {
          shepherd_trace(cmd);
          replace_params(cmd, clean_command, clean_len,
                         ckpt_variables);
@@ -2487,14 +2792,17 @@ static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
    }
       
    /* Don't perform regular checkpoint for userdefined checkpointing */
-   if (ckpt_type) {
+   if (ckpt_type)
+   {
 #if 0
       if (ckpt_type & CKPT_USER)
          *ckpt_interval = 0;
       else   
 #endif
          *ckpt_interval = atoi(get_conf_val("ckpt_interval"));
-   } else {
+   }
+   else
+   {
       *ckpt_interval = 0;      
    }
 }      
@@ -2516,14 +2824,17 @@ static void set_ckpt_restart_command(const char *childname, int ckpt_type,
    strcpy(rest_command, "none");
    
    /* Need to retrieve job pid here */
-   if (add_config_entry("job_pid", get_conf_val("ckpt_pid"))) {
+   if (add_config_entry("job_pid", get_conf_val("ckpt_pid")))
+   {
       shepherd_error(1, "adding config entry \"job_pid\" failed");
    }
       
    /* Only set rest_command for "job" */
-   if ((!strcmp(childname, "job")) && (ckpt_type & CKPT_REST_KERNEL)) {
+   if ((!strcmp(childname, "job")) && (ckpt_type & CKPT_REST_KERNEL))
+   {
       cmd = get_conf_val("ckpt_rest_command");
-      if (strcasecmp("none", cmd)) {
+      if (strcasecmp("none", cmd))
+      {
          shepherd_trace(cmd);
          replace_params(cmd, rest_command, rest_len, ckpt_variables);
          shepherd_trace(rest_command);
@@ -2540,27 +2851,34 @@ static void set_ckpt_restart_command(const char *childname, int ckpt_type,
  *-------------------------------------------------------------------------*/
 static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid) 
 {
-   char pidbuf[64];
    const char *job_pid = NULL;
 
    /* Set job_pid to real pid or to saved pid for Hibernator restart 
     * for Hibernator restart a part of the job is already done
     */
-   if (ckpt_type & CKPT_REST_KERNEL) {
-      sprintf(pidbuf, "%s", get_conf_val("ckpt_pid"));
+   if (ckpt_type & CKPT_REST_KERNEL)
+   {
       *ckpt_pid = atoi(get_conf_val("ckpt_pid"));
-   } else {   
+   }
+   else
+   {
+      char pidbuf[32];
+
       sprintf(pidbuf, "%d", pid);
+
       if (add_config_entry("job_pid", pidbuf))
          shepherd_error(1, "can't add \"job_pid\" entry");
+
       if (ckpt_type & CKPT_KERNEL)
          *ckpt_pid = pid;
       else
          *ckpt_pid = 0;   
    }
+
    job_pid = get_conf_val("job_pid");
       
-   if (shepherd_write_job_pid_file(job_pid) == false) {
+   if (shepherd_write_job_pid_file(job_pid) == false)
+   {
       /* No use to go on further */
       shepherd_signal_job(pid, SIGKILL);
       shepherd_error(1, "can't write \"job_pid\" file");   
@@ -2582,19 +2900,24 @@ static int start_async_command(const char *descr, char *cmd)
    buffer = sge_malloc(size);
    pw = sge_getpwnam_r(get_conf_val("job_owner"), &pw_struct, buffer, size);
 
-   if (!pw) {
+   if (!pw)
+   {
       shepherd_error(1, "can't get password entry for user \"%s\"",
                      get_conf_val("job_owner"));
    }
+
    /* the getpwnam is only a verification - the result is not used - free it */
    FREE(buffer);
 
-	/* Create "error" and "exit_status" files here */
-	shepherd_error_init();
+   /* Create "error" and "exit_status" files here */
+   shepherd_error_init();
                             
-   if ((pid = fork()) == -1) {
+   if ((pid = fork()) == -1)
+   {
       shepherd_trace("can't fork for starting %s command", descr);
-   } else if (pid == 0) {
+   }
+   else if (pid == 0)
+   {
       int use_qsub_gid;
       gid_t gid;
       char *tmp_str;
@@ -2605,16 +2928,22 @@ static int start_async_command(const char *descr, char *cmd)
       setrlimits(0);
       sge_set_environment();
       umask(022);
+
       tmp_str = search_conf_val("qsub_gid");
-      if (tmp_str && strcmp(tmp_str, "no")) {
+      if (tmp_str && strcmp(tmp_str, "no"))
+      {
          use_qsub_gid = 1;
          gid = atol(tmp_str);
-      } else {
+      }
+      else
+      {
          use_qsub_gid = 0;       
          gid = 0;
       }
+
       if (sge_set_uid_gid_addgrp(get_conf_val("job_owner"), NULL, 0, 0, 0, 
-                                 err_str, use_qsub_gid, gid) > 0) {
+                                 err_str, use_qsub_gid, gid) > 0)
+      {
          shepherd_trace(err_str);
          exit(1);
       }   
@@ -2624,23 +2953,25 @@ static int start_async_command(const char *descr, char *cmd)
       /* we have to provide the async command with valid io file handles
        * else it might fail 
        */
-      if((open("/dev/null", O_RDONLY, 0) != 0) || 
-         (open("/dev/null", O_WRONLY, 0) != 1) || 
-         (open("/dev/null", O_WRONLY, 0) != 2)) {
-         shepherd_trace("error opening std* file descriptors");
-         exit(1);
+      if ((open("/dev/null", O_RDONLY, 0) != 0) || 
+          (open("/dev/null", O_WRONLY, 0) != 1) || 
+          (open("/dev/null", O_WRONLY, 0) != 2))
+      {
+          shepherd_trace("error opening std* file descriptors");
+          exit(1);
       }   
 
       foreground = 0;
 
       cwd = get_conf_val("cwd");
-      if (sge_chdir(cwd)) {
+      if (sge_chdir(cwd))
+      {
          shepherd_trace("%s: can't chdir to %s", descr, cwd);
       }   
 
       sge_set_def_sig_mask(NULL, NULL);
-      start_command(descr, get_conf_val("shell_path"),
-         cmd, cmd, "start_as_command", 0, 0, 0, 0, "", 0);
+      start_command(descr, get_conf_val("shell_path"), cmd, cmd, "start_as_command", 0, 0, 0, 0, "", 0);
+
       return 0;   
    }
 
@@ -2654,12 +2985,14 @@ static void start_clean_command(char *cmd)
 
    shepherd_trace("starting ckpt clean command");
 
-   if (!cmd || *cmd == '\0' || !strcasecmp(cmd, "none")) {
+   if (!cmd || *cmd == '\0' || !strcasecmp(cmd, "none"))
+   {
       shepherd_trace("no checkpointing clean command to start");
       return;
    }
          
-   if ((pid = start_async_command("clean", cmd)) == -1) {
+   if ((pid = start_async_command("clean", cmd)) == -1)
+   {
       shepherd_trace("couldn't start clean command");
       return;
    }   
@@ -2667,8 +3000,7 @@ static void start_clean_command(char *cmd)
    
    do {
       npid = waitpid(pid, &status, 0);
-   } while ((npid <= 0) || (!WIFSIGNALED(status) && !WIFEXITED(status)) ||
-            (npid != pid));
+   } while ((npid <= 0) || (!WIFSIGNALED(status) && !WIFEXITED(status)) || (npid != pid));
 
    if (WIFSIGNALED(status))
       shepherd_trace("clean command died through signal");
@@ -2683,16 +3015,18 @@ static void start_clean_command(char *cmd)
  mechanism is used.
  ****************************************************************/
 void 
-shepherd_signal_job(pid_t pid, int sig) {
+shepherd_signal_job(pid_t pid, int sig)
+{
+
 #if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
-   static int first = 1;
+    static int first = 1;
 #  if defined(IRIX)
-   static ash_t osjobid = 0;
-#	elif defined(NECSX4) || defined(NECSX5)
-   char err_str[512];
-	static id_t osjobid = 0;
+    static ash_t osjobid = 0;
+#  elif defined(NECSX4) || defined(NECSX5)
+    char err_str[512];
+    static id_t osjobid = 0;
 #  elif defined(CRAY)
-   static int osjobid = 0;
+    static int osjobid = 0;
 #  endif
 # endif
 
@@ -2760,8 +3094,10 @@ shepherd_signal_job(pid_t pid, int sig) {
       static u_long32 first_kill_ts = 0;
       static bool is_qrsh = false;
    
-      if (first_kill == 1 || sig != SIGKILL) {
-         if (search_conf_val("qrsh_pid_file") != NULL) {
+      if (first_kill == 1 || sig != SIGKILL)
+      {
+         if (search_conf_val("qrsh_pid_file") != NULL)
+         {
             char *pid_file_name = NULL;
             pid_t qrsh_pid = 0;
 
@@ -2769,7 +3105,8 @@ shepherd_signal_job(pid_t pid, int sig) {
 
             sge_switch2start_user();
 
-            if (shepherd_read_qrsh_file(pid_file_name, &qrsh_pid)) {
+            if (shepherd_read_qrsh_file(pid_file_name, &qrsh_pid))
+            {
                is_qrsh = true;
                pid = -qrsh_pid;
                shepherd_trace("found pid of qrsh client command: "pid_t_fmt, pid);
@@ -2785,7 +3122,8 @@ shepherd_signal_job(pid_t pid, int sig) {
       * qrsh -d is killed in the same time as the qrsh_starter child and so no
       * qrsh_exit_code file is written (see Issue: 1679)
       */
-      if ((first_kill == 1) || (sge_get_gmt() - first_kill_ts > 10) || (sig != SIGKILL)) {
+      if ((first_kill == 1) || (sge_get_gmt() - first_kill_ts > 10) || (sig != SIGKILL))
+      {
         shepherd_trace("now sending signal %s to pid "pid_t_fmt, sge_sys_sig2str(sig), pid);
         sge_switch2start_user();
         kill(pid, sig);
@@ -2795,11 +3133,13 @@ shepherd_signal_job(pid_t pid, int sig) {
         if (first_kill == 0 || sig != SIGKILL || is_qrsh == false) {
 #   if defined(SOLARIS) || defined(LINUX) || defined(ALPHA) || defined(FREEBSD) || defined(DARWIN)
 #      ifdef COMPILE_DC
-            if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
+            if (atoi(get_conf_val("enable_addgrp_kill")) == 1)
+            {
                 gid_t add_grp_id;
                 char *cp = search_conf_val("add_grp_id");
 
-                if (cp) {
+                if (cp)
+                {
                     add_grp_id = atol(cp);
                 } else {
                     add_grp_id = 0;
@@ -2812,13 +3152,18 @@ shepherd_signal_job(pid_t pid, int sig) {
             }
 #      endif
 #   elif defined(IRIX)
-            if (first == 1) {
+            if (first == 1)
+            {
                 shepherd_read_osjobid_file(&osjobid, false);
                 first = 0;
             }
-            if (osjobid == 0) {
+
+            if (osjobid == 0)
+            {
                 shepherd_trace("value in \"osjobid\" file = 0, not using kill_ash/killm");
-            } else {
+            }
+            else
+            {
                 sge_switch2start_user();
                 kill_ash(osjobid, sig, sig == 9);
                 sge_switch2admin_user();
@@ -2826,11 +3171,14 @@ shepherd_signal_job(pid_t pid, int sig) {
 #   endif
         }
 # endif
-      } else {
+      }
+      else
+      {
         shepherd_trace("ignored signal %s to pid "pid_t_fmt, sge_sys_sig2str(sig), pid);
       }
 
-      if (sig == SIGKILL) {
+      if (sig == SIGKILL)
+      {
         first_kill = 0;
         first_kill_ts = sge_get_gmt();
       }
@@ -2848,24 +3196,28 @@ static int notify_tasker(u_long32 exit_status)
 
    pvm_tasker_pid[0] = sig_info_file[0] = pvm_task_id[0] = '\0';
 
-   if (!(fp = fopen(filename, "r"))) {
+   if (!(fp = fopen(filename, "r")))
+   {
       shepherd_error(1, "can't open environment file: %s", strerror(errno));
       return 1;
    }
 
-   while (fgets(buf, sizeof(buf), fp)) {
+   while (fgets(buf, sizeof(buf), fp))
+   {
       line++;
 
       if (strlen(buf) <= 1)     /* empty line or lastline */
          continue;
 
       name = strtok(buf, "=");
-      if (!name) {
-         shepherd_error(1, "error reading environment file: line=%d, "
-                        "contents:%s", line, buf);
+      if (!name)
+      {
+         shepherd_error(1, "error reading environment file: line=%d, contents:%s", line, buf);
+
          FCLOSE(fp);
          return 1;
       }
+
       value = strtok(NULL, "\n");
       if (!value)
          value = "";
@@ -2882,18 +3234,20 @@ static int notify_tasker(u_long32 exit_status)
 
    FCLOSE(fp);
 
-   if (!pvm_tasker_pid[0] || !sig_info_file[0] || !pvm_task_id[0]) {
+   if (!pvm_tasker_pid[0] || !sig_info_file[0] || !pvm_task_id[0])
+   {
       shepherd_trace("no tasker to notify");
       return 0;
    }
 
-   if (sscanf(pvm_tasker_pid, pid_t_fmt, &tasker_pid)!=1) {
-      shepherd_error(1, "unable to parse pvm tasker pid from \"%s\"",
-                     pvm_tasker_pid);
+   if (sscanf(pvm_tasker_pid, pid_t_fmt, &tasker_pid)!=1)
+   {
+      shepherd_error(1, "unable to parse pvm tasker pid from \"%s\"", pvm_tasker_pid);
       return 1;
    }
 
-   if (shepherd_write_sig_info_file(sig_info_file, pvm_task_id, exit_status)) {
+   if (shepherd_write_sig_info_file(sig_info_file, pvm_task_id, exit_status))
+   {
       char *job_owner;
       struct passwd *pw=NULL;
       struct passwd pw_struct;
@@ -2903,10 +3257,13 @@ static int notify_tasker(u_long32 exit_status)
       /* sig_info_file has to be removed by tasker 
          and tasker runs in user mode */
       job_owner = get_conf_val("job_owner");
+
       size = get_pw_buffer_size();
       buffer = sge_malloc(size);
+
       pw = sge_getpwnam_r(job_owner, &pw_struct, buffer, size);
-      if (!pw) {
+      if (!pw)
+      {
          shepherd_error(1, "can't get password entry for user \"%s\"", job_owner);
       }
       chown(sig_info_file, pw->pw_uid, -1);
@@ -2936,18 +3293,26 @@ static pid_t start_token_cmd(int wait_for_finish, const char *cmd,
    pid_t ret;
 
    pid = fork();
-   if (pid < 0) {
+   if (pid < 0)
+   {
       return -1;
-   } else if (pid == 0) {
-      if (!wait_for_finish && (getenv("SGE_DEBUG_LEVEL"))) {
+   }
+   else if (pid == 0)
+   {
+      if (!wait_for_finish && (getenv("SGE_DEBUG_LEVEL")))
+      {
          putenv("SGE_DEBUG_LEVEL=0 0 0 0 0 0 0 0");
       }   
       execle(cmd, cmd, arg1, arg2, arg3, NULL, sge_get_environment ());
       exit(1);
-   } else if (wait_for_finish) {
+   }
+   else if (wait_for_finish)
+   {
         ret = do_wait(pid);
         return ret;
-   } else {
+   }
+   else
+   {
       return pid;
    }
 
@@ -2956,7 +3321,8 @@ static pid_t start_token_cmd(int wait_for_finish, const char *cmd,
 }
 
 /*------------------------------------------------------------------*/
-static int do_wait(pid_t pid) {
+static int do_wait(pid_t pid)
+{
    pid_t npid;
    int status, exit_status;
 
@@ -2965,14 +3331,18 @@ static int do_wait(pid_t pid) {
     */
    do {
       npid = waitpid(pid, &status, 0);
-   } while ((npid <= 0) || (!WIFSIGNALED(status) && !WIFEXITED(status)) ||
-            (npid != pid));
+   } while ((npid <= 0) || (!WIFSIGNALED(status) && !WIFEXITED(status)) || (npid != pid));
 
-   if (WIFEXITED(status)) {
+   if (WIFEXITED(status))
+   {
       exit_status = WEXITSTATUS(status);
-   } else if (WIFSIGNALED(status)) {
+   }
+   else if (WIFSIGNALED(status))
+   {
       exit_status = 128 + WTERMSIG(status);
-   } else {
+   }
+   else
+   {
       exit_status = 255;
    }
 
@@ -2984,7 +3354,8 @@ static int do_wait(pid_t pid) {
  * define a signal handler for SIGPIPE
  * to avoid that unblocked signal will kill us
  *-------------------------------------------------------------------*/
-static void set_sig_handler(int sig_num) {
+static void set_sig_handler(int sig_num)
+{
    struct sigaction sa;
       
    memset(&sa, 0, sizeof(sa));
@@ -2999,11 +3370,13 @@ static void set_sig_handler(int sig_num) {
 }
 
 /*-------------------------------------------------------------------*/
-static void shepherd_signal_handler(int dummy) {
+static void shepherd_signal_handler(int dummy)
+{
    /* may not log in signal handler 
       as long as Async-Signal-Safe functions such as fopen() are used in 
       shepherd logging code */
 #if 0
    shepherd_trace("SIGPIPE received");
 #endif
+
 }

@@ -54,17 +54,7 @@
 #  include <dlfcn.h>
 #endif
 
-#if defined(PLPA_LINUX) 
-#  include "plpa.h"
-#endif
- 
 /* functions related to get load values for execd (see load_avg.c) */
-
-/* get the amount of cores available on the execution host */ 
-int get_execd_amount_of_cores(void);
-
-/* get the amount of sockets of the execution host */
-int get_execd_amount_of_sockets(void);
 
 /* get the topology string with all cores installed on the system */
 bool get_execd_topology(char** topology, int* length);
@@ -72,18 +62,11 @@ bool get_execd_topology(char** topology, int* length);
 /* get the topology string where all cores currently in use are marked */
 bool get_execd_topology_in_use(char** topology);
 
-#if defined(PLPA_LINUX) || defined(SOLARISAMD64) || defined(SOLARIS86)
+#if defined(THREADBINDING) || defined(SOLARISPSET)
 bool account_job(const char* job_topology);
  
 bool binding_set_striding(int first_socket, int first_core, int amount_of_cores,
       int offset, int stepsize, char** reason);
-
-bool binding_one_per_socket(int first_socket, int amount_of_sockets, int n);
-
-bool binding_n_per_socket(int first_socket, int amount_of_sockets, int n);
-
-bool binding_explicit_exctract_sockets_cores(const char* parameter, int** list_of_sockets, 
-   int* samount, int** list_of_cores, int* camount);
 
 bool binding_explicit_check_and_account(const int* list_of_sockets, const int samount, 
    const int* list_of_cores, const int score, char** topo_used_by_job, 
@@ -92,13 +75,6 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
 bool get_linear_automatic_socket_core_list_and_account(const int amount, 
       int** list_of_sockets, int* samount, int** list_of_cores, int* camount, 
       char** topo_by_job, int* topo_by_job_length);
-
-/* functions related to get load values for execd (see load_avg.c) */
-/* get the amount of cores available on the execution host */ 
-int getExecdAmountOfCores(void);
-
-/* get the amount of sockets of the execution host */
-int getExecdAmountOfSockets(void);
 
 /* get the topology string with all cores installed on the system */
 bool get_execd_topology(char** topology, int* length);
@@ -115,9 +91,6 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
 /* for initializing used topology on execution daemon side */
 bool initialize_topology(void);
 
-/* check if core can be used */
-bool topology_is_in_use(const int socket, const int core);
-
 /* for initializing used topology on execution daemon side */
 bool initialize_topology(void);
 
@@ -126,7 +99,7 @@ bool free_topology(const char* topology, const int topology_length);
 
 #endif
 
-#if defined(SOLARISAMD64) || defined(SOLARIS86)
+#if defined(SOLARISPSET)
 
 int create_processor_set_striding_solaris(const int first_socket,
    const int first_core, const int amount, const int step_size, 
@@ -143,13 +116,6 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length);
 void free_matrix(int** matrix, const int length);
 #endif
 
-bool
-binding_print_to_string(const lListElem *this_list, dstring * string);
-
-bool
-binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string);
-
-bool
-binding_type_to_string(binding_type_t type, dstring *string);
+bool binding_print_to_string(const lListElem *this_list, dstring * string);
 
 #endif /* __SGE_BINDING_H */

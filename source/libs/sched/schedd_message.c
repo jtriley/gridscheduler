@@ -365,7 +365,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
    lList *jobs_ulng = NULL;
    lListElem *jid_ulng;
    u_long32 schedd_job_info;
-#if defined(LINUX)
+#if defined(HAS_VSNPRINTF)
    int nchars;
 #endif
    lListElem *tmp_sme = sconf_get_tmp_sme();
@@ -374,11 +374,11 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
 
    fmt = sge_schedd_text(message_number);
    va_start(args, message_number);
-   schedd_job_info = sconf_get_schedd_job_info();
 
-#if defined(LINUX)
+#if defined(HAS_VSNPRINTF)
    nchars = vsnprintf(msg, MAXMSGLEN, fmt, args);
-   if (nchars == -1) {
+   if (nchars == -1)
+   {
       ERROR((SGE_EVENT, MSG_SCHEDDMESSAGE_CREATEJOBINFOFORMESSAGEFAILED_U,
          sge_u32c(message_number)));
       DRETURN_VOID;
@@ -386,6 +386,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
 #else
    vsprintf(msg, fmt, args);
 #endif
+   va_end(args);
 
    if (monitor_alpp || monitor_next_run) {
       if (job_id) {
@@ -396,11 +397,16 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
       schedd_log(msg_log, monitor_alpp, monitor_next_run);
    }
 
-   if (!monitor_alpp && job_id && (schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
-      if (sconf_get_mes_schedd_info()) {
-         if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
+   schedd_job_info = sconf_get_schedd_job_info();
+   if (!monitor_alpp && job_id && (schedd_job_info != SCHEDD_JOB_INFO_FALSE))
+   {
+      if (sconf_get_mes_schedd_info())
+      {
+         if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST)
+         {
             if (!range_list_is_id_within(sconf_get_schedd_job_info_range(),
-                                         job_id)) {
+                                         job_id))
+            {
                DPRINTF(("Job "sge_u32" not in scheddconf.schedd_job_info_list\n", job_id));
                DRETURN_VOID;
             }
@@ -457,7 +463,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
    lList *jobs_ulng = NULL;
    lListElem *jid_ulng;
    u_long32 schedd_job_info;
-#if defined(LINUX)
+#if defined(HAS_VSNPRINTF)
    int nchars;
 #endif
    lListElem *tmp_sme = sconf_get_tmp_sme();
@@ -466,9 +472,8 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
 
    fmt = sge_schedd_text(message_number);
    va_start(args,message_number);
-   schedd_job_info = sconf_get_schedd_job_info();
 
-#if defined(LINUX)
+#if defined(HAS_VSNPRINTF)
    nchars = vsnprintf(msg, MAXMSGLEN, fmt, args);
    if (nchars == -1) {
       ERROR((SGE_EVENT, MSG_SCHEDDMESSAGE_CREATEJOBINFOFORMESSAGEFAILED_U,
@@ -478,8 +483,11 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
 #else
    vsprintf(msg, fmt, args);
 #endif
+   va_end(args);
 
-   if (job_number && (schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
+   schedd_job_info = sconf_get_schedd_job_info();
+   if (job_number && (schedd_job_info != SCHEDD_JOB_INFO_FALSE))
+   {
 
       if (sconf_get_mes_schedd_info()) {
          if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
@@ -549,7 +557,7 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
    const char *fmt;
    lListElem *mes;
    char msg[MAXMSGLEN];
-#if defined(LINUX)
+#if defined(HAS_VSNPRINTF)
    int nchars;
 #endif
 
@@ -558,9 +566,10 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
    /* Create error message */
    fmt = sge_schedd_text(message_number);
    va_start(args,message_number);
-#if defined(LINUX)
+#if defined(HAS_VSNPRINTF)
    nchars = vsnprintf(msg, MAXMSGLEN, fmt, args);
-   if (nchars == -1) {
+   if (nchars == -1)
+   {
       ERROR((SGE_EVENT, MSG_SCHEDDMESSAGE_CREATEJOBINFOFORMESSAGEFAILED_U,
          sge_u32c(message_number)));
       DRETURN_VOID;
@@ -568,6 +577,8 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, u_long32
 #else
    vsprintf(msg, fmt, args);
 #endif
+   va_end(args);
+
    if (!monitor_alpp && sconf_get_schedd_job_info() != SCHEDD_JOB_INFO_FALSE) {
       lListElem *sme = sconf_get_sme();
       if (sme != NULL) {

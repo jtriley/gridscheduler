@@ -73,9 +73,6 @@ void job_suc_pre_ad(lListElem *jep);
 void sge_init_job_number(void); 
 void sge_store_job_number(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitoring_t *monitor);
 
-void job_ja_task_send_abort_mail(const lListElem *job, const lListElem *ja_task, const char *ruser,
-                                 const char *rhost,  const char *err_str);
-
 void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx, lListElem *j, lListElem *t);
 
 void sge_job_spool(sge_gdi_ctx_class_t *);

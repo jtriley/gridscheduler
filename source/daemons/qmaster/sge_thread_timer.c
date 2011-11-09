@@ -396,9 +396,10 @@ sge_timer_main(void *arg)
       MONITOR_TET_EXEC((&monitor));
 
       lDechainElem(Event_Control.list, le);
-      lFreeElem(&le);
 
       sge_mutex_unlock("event_control_mutex", SGE_FUNC, __LINE__, &Event_Control.mutex);
+
+      lFreeElem(&le);
 
       te_scan_table_and_deliver(ctx, te, &monitor);
       te_free_event(&te);

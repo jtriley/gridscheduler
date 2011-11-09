@@ -1252,7 +1252,7 @@ EXTERN nl_catd catd;
  */
 #define SIGN_EXTEND_CHAR(a)	(((a) & 0x80) ? ((a) | ~0x7f) : (a))
 
-#if defined(LINUX86) || defined(ALINUX) || defined(LINUXIA64) || defined(LINUXAMD64) || defined(LINUXSPARC) || defined(LINUX)
+#if defined(LINUX86) || defined(ALINUX) || defined(LINUXIA64) || defined(LINUXX64) || defined(LINUXSPARC) || defined(LINUX)
 #include <time.h>
 #endif
 

@@ -246,11 +246,10 @@ void sge_job_exit(sge_gdi_ctx_class_t *ctx, lListElem *jr, lListElem *jep, lList
       /*
        * case 4: job being rescheduled because rerun specified or ckpt job
        */
-   else if (((failed == ESSTATE_NO_EXITSTATUS) || 
-              failed == ESSTATE_DIED_THRU_SIGNAL) &&
-            ((lGetUlong(jep, JB_restart) == 1 || 
-             (lGetUlong(jep, JB_checkpoint_attr) & ~NO_CHECKPOINT)) ||
-             (!lGetUlong(jep, JB_restart) && lGetBool(queueep, QU_rerun)))) {
+   else if ( (failed == ESSTATE_NO_EXITSTATUS || failed == ESSTATE_DIED_THRU_SIGNAL) &&
+              (lGetUlong(jep, JB_restart) == 1 || lGetUlong(jep, JB_checkpoint_attr) & ~NO_CHECKPOINT ||
+              (lGetUlong(jep, JB_restart) == 0 && queueep && lGetBool(queueep, QU_rerun))))
+   {
       DTRACE;
       lSetUlong(jatep, JAT_job_restarted, 
                   MAX(lGetUlong(jatep, JAT_job_restarted), 

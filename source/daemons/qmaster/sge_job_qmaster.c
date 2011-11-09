@@ -207,7 +207,6 @@ int sge_gdi_add_job(sge_gdi_ctx_class_t *ctx,
                     monitoring_t *monitor)
 {
    int ret;
-   bool lret;
    u_long32 start;
    u_long32 end;
    u_long32 step;
@@ -220,6 +219,7 @@ int sge_gdi_add_job(sge_gdi_ctx_class_t *ctx,
    if (jsv_is_enabled(tc->thread_name)) {
       struct timeval start_time;
       struct timeval end_time;
+      bool lret;
       int jsv_threshold = mconf_get_jsv_threshold();
       /*
        * first verify before JSV is executed
@@ -394,8 +394,9 @@ int sge_gdi_del_job(sge_gdi_ctx_class_t *ctx, lListElem *idep, lList **alpp, cha
    }
 
    /* first lets make sure they have permission if a force is involved */
-   if (!mconf_get_enable_forced_qdel()) {/* Flag ENABLE_FORCED_QDEL in qmaster_params */
-
+   if (!mconf_get_enable_forced_qdel())
+   {
+      /* Flag ENABLE_FORCED_QDEL in qmaster_params */
 
       if (forced && !manop_is_manager(ruser)) {
          ERROR((SGE_EVENT, MSG_JOB_FORCEDDELETEPERMS_S, ruser));
@@ -897,50 +898,46 @@ static void get_rid_of_schedd_job_messages(u_long32 job_number)
    DRETURN_VOID;
 }
 
-void job_ja_task_send_abort_mail(const lListElem *job,
-                                 const lListElem *ja_task,
-                                 const char *ruser,
-                                 const char *rhost,
-                                 const char *err_str)
+static void job_ja_task_send_abort_mail(const lListElem *job, const lListElem *ja_task,
+                                        const char *ruser, const char *rhost, const char *err_str)
 {
-   dstring subject = DSTRING_INIT;
-   dstring body = DSTRING_INIT;
-   lList *users = NULL;
-   u_long32 job_id;
-   u_long32 ja_task_id;
-   const char *job_name = NULL;
-   int send_abort_mail = 0;
+   if (VALID(MAIL_AT_ABORT, lGetUlong(job, JB_mail_options)) && !(lGetUlong(ja_task, JAT_state) & JDELETED))
+   {
+      dstring subject = DSTRING_INIT, body = DSTRING_INIT;
+      const char *job_name;
+      u_long32 job_id;
+      lList *users;
 
-   ja_task_id = lGetUlong(ja_task, JAT_task_number);
-   job_name = lGetString(job, JB_job_name);
-   job_id = lGetUlong(job, JB_job_number);
-   users = lGetList(job, JB_mail_list);
-   send_abort_mail = VALID(MAIL_AT_ABORT, lGetUlong(job, JB_mail_options))
-                     && !(lGetUlong(ja_task, JAT_state) & JDELETED);
+      job_name = lGetString(job, JB_job_name);
+      job_id = lGetUlong(job, JB_job_number);
 
-   if (send_abort_mail) {
-      if (job_is_array(job)) {
-         sge_dstring_sprintf(&subject, MSG_MAIL_TASKKILLEDSUBJ_UUS,
-                 sge_u32c(job_id), sge_u32c(ja_task_id), job_name);
-         sge_dstring_sprintf(&body, MSG_MAIL_TASKKILLEDBODY_UUSSS,
-                 sge_u32c(job_id), sge_u32c(ja_task_id), job_name, ruser, rhost);
-      } else {
-         sge_dstring_sprintf(&subject, MSG_MAIL_JOBKILLEDSUBJ_US,
-                 sge_u32c(job_id), job_name);
-         sge_dstring_sprintf(&body, MSG_MAIL_JOBKILLEDBODY_USSS,
-                 sge_u32c(job_id), job_name, ruser, rhost);
+      if (job_is_array(job))
+      {
+         u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
+
+         sge_dstring_sprintf(&subject, MSG_MAIL_TASKKILLEDSUBJ_UUS, sge_u32c(job_id), sge_u32c(ja_task_id), job_name);
+         sge_dstring_sprintf(&body, MSG_MAIL_TASKKILLEDBODY_UUSSS, sge_u32c(job_id), sge_u32c(ja_task_id), job_name, ruser, rhost);
       }
-      if (err_str != NULL) {
+      else
+      {
+         sge_dstring_sprintf(&subject, MSG_MAIL_JOBKILLEDSUBJ_US, sge_u32c(job_id), job_name);
+         sge_dstring_sprintf(&body, MSG_MAIL_JOBKILLEDBODY_USSS, sge_u32c(job_id), job_name, ruser, rhost);
+      }
+
+      if (err_str != NULL)
+      {
          sge_dstring_append(&body, "\n");
          sge_dstring_append(&body, MSG_MAIL_BECAUSE);
          sge_dstring_append(&body, err_str);
       }
-      cull_mail(QMASTER, users, sge_dstring_get_string(&subject),
-                sge_dstring_get_string(&body), "job abortion");
-   }
 
-   sge_dstring_free(&subject);
-   sge_dstring_free(&body);
+      users = lGetList(job, JB_mail_list);
+
+      cull_mail(QMASTER, users, sge_dstring_get_string(&subject), sge_dstring_get_string(&body), "job abortion");
+
+      sge_dstring_free(&subject);
+      sge_dstring_free(&body);
+   }
 }
 
 static void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
@@ -956,61 +953,72 @@ static void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
 
    DENTER(TOP_LAYER, "get_rid_of_job_due_to_qdel");
 
-   job_number = lGetUlong(j, JB_job_number);
-   task_number = lGetUlong(t, JAT_task_number);
    qep = cqueue_list_locate_qinstance(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), lGetString(t, JAT_master_queue));
-   if (!qep) {
+   if (!qep)
+   {
       ERROR((SGE_EVENT, MSG_JOB_UNABLE2FINDQOFJOB_S,
              lGetString(t, JAT_master_queue)));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, 
                       ANSWER_QUALITY_ERROR);
    }
-   if (sge_signal_queue(ctx, SGE_SIGKILL, qep, j, t, monitor)) {
-      if (force) {
+
+   job_number = lGetUlong(j, JB_job_number);
+   task_number = lGetUlong(t, JAT_task_number);
+
+   if (sge_signal_queue(ctx, SGE_SIGKILL, qep, j, t, monitor))
+   {
+      if (force)
+      {
          /* 3: JOB_FINISH reports aborted */
          sge_commit_job(ctx, j, t, NULL, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
          cancel_job_resend(job_number, task_number);
-         j = NULL;
 
-         if (job_is_array(j)) {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELTASK_SUU,
-                   ruser, sge_u32c(job_number), sge_u32c(task_number)));
-         } else {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELJOB_SU,
-                   ruser, sge_u32c(job_number)));
+         if (job_is_array(j))
+         {
+            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number)));
          }
-         answer_list_add(answer_list, SGE_EVENT, STATUS_OK, 
-                         ANSWER_QUALITY_INFO);
-      } else {
-         ERROR((SGE_EVENT, MSG_COM_NOSYNCEXECD_SU,
-                ruser, sge_u32c(job_number)));
-         answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, 
-                         ANSWER_QUALITY_ERROR);
+         else
+         {
+            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number)));
+         }
+
+         answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+
+         j = NULL;
       }
-   } else {
-      if (force) {
+      else
+      {
+         ERROR((SGE_EVENT, MSG_COM_NOSYNCEXECD_SU, ruser, sge_u32c(job_number)));
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      }
+   }
+   else
+   {
+      if (force)
+      {
          u_long32 now = sge_get_gmt();
          const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
-         if (job_is_array(j)) {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELTASK_SUU,
-                   ruser, sge_u32c(job_number), sge_u32c(task_number)));
-         } else {
-            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELJOB_SU,
-                   ruser, sge_u32c(job_number)));
+         if (job_is_array(j))
+         {
+            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number)));
+         }
+         else
+         {
+            ERROR((SGE_EVENT, MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number)));
          }
 
          job_report_init_from_job_with_usage(dummy_jr, j, t, NULL, now);
          reporting_create_acct_record(ctx, NULL, dummy_jr, j, t, false);
-         reporting_create_job_log(NULL, now, JL_DELETED, MSG_SCHEDD, 
-                                  qualified_hostname, NULL, j, t, NULL, MSG_LOG_DELFORCED);
-         sge_commit_job(ctx, j, t, NULL, COMMIT_ST_FINISHED_FAILED_EE, 
-                        COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
+         reporting_create_job_log(NULL, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, NULL, j, t, NULL, MSG_LOG_DELFORCED);
+         sge_commit_job(ctx, j, t, NULL, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor);
          cancel_job_resend(job_number, task_number);
          lFreeElem(&dummy_jr);
          j = NULL;
-      } else {
+      }
+      else
+      {
          /*
           * the job gets registered for deletion:
           * 0. send signal to execd
@@ -1023,29 +1031,29 @@ static void get_rid_of_job_due_to_qdel(sge_gdi_ctx_class_t *ctx,
           *    deleted from master lists
           */
 
-         if (job_is_array(j)) {
-            INFO((SGE_EVENT, MSG_JOB_REGDELTASK_SUU,
-                  ruser, sge_u32c(job_number), sge_u32c(task_number)));
-         } else {
-            INFO((SGE_EVENT, MSG_JOB_REGDELX_SSU,
-                  ruser, SGE_OBJ_JOB, sge_u32c(job_number)));
+         if (job_is_array(j))
+         {
+            INFO((SGE_EVENT, MSG_JOB_REGDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number)));
+         }
+         else
+         {
+            INFO((SGE_EVENT, MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number)));
          }
       }
-      answer_list_add(answer_list, SGE_EVENT, STATUS_OK, 
-                      ANSWER_QUALITY_INFO);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
    job_mark_job_as_deleted(ctx, j, t);
    DRETURN_VOID;
 }
 
-void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx,
-                             lListElem *j,
-                             lListElem *t)
+void job_mark_job_as_deleted(sge_gdi_ctx_class_t *ctx, lListElem *j, lListElem *t)
 {
    bool job_spooling = ctx->get_job_spooling(ctx);
 
    DENTER(TOP_LAYER, "job_mark_job_as_deleted");
-   if (j && t) {
+
+   if (j && t)
+   {
       lList *answer_list = NULL;
       dstring buffer = DSTRING_INIT;
       u_long32 state = lGetUlong(t, JAT_state);
@@ -1829,8 +1837,8 @@ lListElem *jep,                /* reduced job element */
 lList **alpp,
 char *ruser, 
 char *rhost,
-int *trigger  
-) {
+int *trigger)
+{
    int pos;
    int is_running = 0, may_not_be_running = 0; 
    u_long32 uval;
@@ -3170,15 +3178,19 @@ void sge_store_job_number(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitori
 
    /* here we got a race condition that can (very unlikely)
       cause concurrent writing of the sequence number file  */ 
-   if (changed) {
+   if (changed)
+   {
       FILE *fp = fopen(SEQ_NUM_FILE, "w");
 
-      if (fp == NULL) {
-         ERROR((SGE_EVENT, MSG_NOSEQFILECREATE_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
-      } else {
+      if (fp != NULL)
+      {
          FPRINTF((fp, sge_u32"\n", job_nr));
          FCLOSE(fp);
-      }   
+      }
+      else
+      {
+         ERROR((SGE_EVENT, MSG_NOSEQFILECREATE_SSS, SGE_OBJ_JOB, SEQ_NUM_FILE, strerror(errno)));
+      }
    }
    DRETURN_VOID;
 

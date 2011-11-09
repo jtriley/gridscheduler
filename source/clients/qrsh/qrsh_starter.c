@@ -94,15 +94,15 @@ static void qrsh_error(const char *fmt, ...)
    va_list ap;
    char message[MAX_STRING_SIZE];
 
-   va_start(ap, fmt);
-
-   if (fmt == NULL || *fmt == '\0') {
+   if (fmt == NULL || *fmt == '\0')
       return;
-   }
 
+   va_start(ap, fmt);
    vsnprintf(message, MAX_STRING_SIZE, fmt, ap);
+   va_end(ap);
 
-   if ((tmpdir = search_conf_val("qrsh_tmpdir")) == NULL) {
+   if ((tmpdir = search_conf_val("qrsh_tmpdir")) == NULL)
+   {
       fprintf(stderr, "%s\n", message);
       fprintf(stderr, MSG_CONF_NOCONFVALUE_S, "qrsh_tmpdir");
       fprintf(stderr, "\n");
@@ -111,13 +111,17 @@ static void qrsh_error(const char *fmt, ...)
 
    taskid = search_conf_val("qrsh_task_id");
 
-   if (taskid != NULL) {
+   if (taskid != NULL)
+   {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_error.%s", tmpdir, taskid);
-   } else {
+   }
+   else
+   {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_error", tmpdir);
    }
 
-   if ((file = SGE_OPEN3(fileName, O_WRONLY | O_APPEND | O_CREAT, 00744)) == -1) {
+   if ((file = SGE_OPEN3(fileName, O_WRONLY | O_APPEND | O_CREAT, 00744)) == -1)
+   {
       fprintf(stderr, "%s\n", message);
       fprintf(stderr, MSG_QRSH_STARTER_CANNOTOPENFILE_SS, fileName, strerror(errno));
       fprintf(stderr, "\n");
@@ -462,39 +466,38 @@ static void forward_signal(int sig)
 *     Interactive/qrsh/join_command()
 *
 *******************************************************************************/
-static int split_command(char *command, char ***cmdargs) {
+static int split_command(char *command, char ***cmdargs)
+{
    /* count number of arguments */
-   int counter = 1;
+   int counter = 1, argc, i, end;
+   const char delimiter = '\xff';
    char *s = command;
-   int argc;
    char **args;
-   int i,end;
-   char delimiter[2];
 
-   snprintf(delimiter, 2, "%c", 0xff);
-
-   while(*s) {
-      if(*s++ == delimiter[0]) {
+   while (*s)
+   {
+      if (*s++ == delimiter)
          counter++;
-      }
    }
 
    /* copy arguments */
-   argc = 0;
-   args = (char **)malloc(counter * sizeof(char *));
-   
-   if(args == NULL) {
+   args = malloc(counter * sizeof(char *));
+   if (args == NULL)
+   {
       return 0;
    }
 
    /* do not use strtok(), strtok() is seeing 2 or more delimiters as one !!! */
-   s=command;
-   args[argc++] = s;
+   argc = 0;
+   args[argc++] = s = command;
+
    end =  strlen(command);
-   for(i = 0; i < end ; i++) {
-      if (s[i] == delimiter[0]) {
+   for(i = 0; i < end ; i++)
+   {
+      if (s[i] == delimiter)
+      {
          s[i] = 0;
-            args[argc++] = &s[i+1];
+         args[argc++] = &s[i+1];
       }
    } 
 
@@ -536,13 +539,14 @@ static int split_command(char *command, char ***cmdargs) {
 *     Interactive/qrsh/split_command()
 *
 *******************************************************************************/
-static char *join_command(int argc, char **argv) {
-   int i;
-   int length = 0;
+static char *join_command(int argc, char **argv)
+{
+   int i, length = 0;
    char *buffer;
    
    /* calculate needed size */
-   for(i = 0; i < argc; i++) {
+   for(i = 0; i < argc; i++)
+   {
       length += strlen(argv[i]);
    }
 
@@ -551,12 +555,14 @@ static char *join_command(int argc, char **argv) {
 
    buffer = malloc(length * sizeof(char));
 
-   if(buffer == NULL) {
+   if (buffer == NULL)
+   {
       return 0;
    }
 
    strcpy(buffer, argv[0]);
-   for(i = 1; i < argc; i++) {
+   for(i = 1; i < argc; i++)
+   {
       strcat(buffer, " ");
       strcat(buffer, argv[i]);
    }
@@ -613,12 +619,14 @@ static int startJob(char *command, char *wrapper, int noshell)
 {
 
    child_pid = fork();
-   if(child_pid == -1) {
+   if (child_pid == -1)
+   {
       qrsh_error(MSG_QRSH_STARTER_CANNOTFORKCHILD_S, strerror(errno));
       return EXIT_FAILURE;
    }
 
-   if(child_pid) {
+   if (child_pid)
+   {
       /* parent */
       int status;
 
@@ -633,7 +641,8 @@ static int startJob(char *command, char *wrapper, int noshell)
       /* preserve pseudo terminal */
 #if defined(LINUX)
       ttyfd = open("/dev/tty", O_RDWR);
-      if (ttyfd != -1) {
+      if (ttyfd != -1)
+      {
          tcsetpgrp(ttyfd, child_pid);
          close(ttyfd); 
       }
@@ -641,7 +650,9 @@ static int startJob(char *command, char *wrapper, int noshell)
 
       while(waitpid(child_pid, &status, 0) != child_pid && errno == EINTR);
       return(status);
-   } else {
+   }
+   else
+   {
       /* child */
       char *buffer = NULL;
       int size;
@@ -655,21 +666,25 @@ static int startJob(char *command, char *wrapper, int noshell)
       char **cmdargs = NULL;
       int i;
 
-      if(!write_pid_file(getpid())) {
+      if (!write_pid_file(getpid()))
+      {
          exit(EXIT_FAILURE);
       }
 
       cmdargc = split_command(command, &cmdargs);
 
-      if(cmdargc == 0) {
+      if (cmdargc == 0)
+      {
          qrsh_error(MSG_QRSH_STARTER_INVALIDCOMMAND);
          exit(EXIT_FAILURE);
       }
 
-      if(!noshell) {
-         struct passwd *pw = NULL;
+      if (!noshell)
+      {
+         struct passwd *pw;
 
-         if((userName = search_conf_val("job_owner")) == NULL) {
+         if ((userName = search_conf_val("job_owner")) == NULL)
+         {
             qrsh_error(MSG_QRSH_STARTER_CANNOTGETLOGIN_S, strerror(errno));
             exit(EXIT_FAILURE);
          }
@@ -677,40 +692,51 @@ static int startJob(char *command, char *wrapper, int noshell)
          size = get_pw_buffer_size();
          buffer = sge_malloc(size);
 
-         if ((pw = sge_getpwnam_r(userName, &pw_struct, buffer, size)) == NULL) {
+         if ((pw = sge_getpwnam_r(userName, &pw_struct, buffer, size)) == NULL)
+         {
             qrsh_error(MSG_QRSH_STARTER_CANNOTGETUSERINFO_S, strerror(errno));
             exit(EXIT_FAILURE);
          }
          
          shell = pw->pw_shell;
          
-         if(shell == NULL) { 
+         if (shell == NULL)
+         { 
             qrsh_error(MSG_QRSH_STARTER_CANNOTDETERMSHELL_S, "/bin/sh");
             shell = "/bin/sh";
          } 
       }
      
-      if((args = malloc((cmdargc + 3) * sizeof(char *))) == NULL) {
+      if ((args = malloc((cmdargc + 3) * sizeof(char *))) == NULL)
+      {
          qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
          exit(EXIT_FAILURE);
       }         
     
-      if(wrapper == NULL) {
-         if(noshell) {
+      if (wrapper == NULL)
+      {
+         if (noshell)
+         {
             cmd = cmdargs[0];
-            for(i = 0; i < cmdargc; i++) {
+            for(i = 0; i < cmdargc; i++)
+            {
                args[argc++] = cmdargs[i];
             }
-         } else {
+         }
+         else
+         {
             cmd = shell;
             args[argc++] = sge_basename(shell, '/');
             args[argc++] = "-c";
             args[argc++] = join_command(cmdargc, cmdargs);
          }
-      } else {
+      }
+      else
+      {
          cmd = wrapper;
          args[argc++] = sge_basename(wrapper, '/');
-         for(i = 0; i < cmdargc; i++) {
+         for (i = 0; i < cmdargc; i++)
+         {
             args[argc++] = cmdargs[i];
          }
       }
@@ -780,26 +806,34 @@ static int writeExitCode(int myExitCode, int programExitCode)
    int  file;
    char fileName[SGE_PATH_MAX];
 
-   if(myExitCode != EXIT_SUCCESS) {
+   if (myExitCode != EXIT_SUCCESS)
+   {
       exitCode = MAKEEXITSTATUS(myExitCode);
-   } else {
+   }
+   else
+   {
       exitCode = programExitCode;
    }
 
-   if((tmpdir = search_conf_val("qrsh_tmpdir")) == NULL) {
+   if ((tmpdir = search_conf_val("qrsh_tmpdir")) == NULL)
+   {
       qrsh_error(MSG_CONF_NOCONFVALUE_S, "qrsh_tmpdir");
       return EXIT_FAILURE;
    }
   
    taskid = get_conf_val("pe_task_id");
    
-   if(taskid != NULL) {
+   if (taskid != NULL)
+   {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_exit_code.%s", tmpdir, taskid);
-   } else {
+   }
+   else
+   {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_exit_code", tmpdir);
    }
 
-   if((file = SGE_OPEN3(fileName, O_WRONLY | O_APPEND | O_CREAT, 00744)) == -1) {
+   if ((file = SGE_OPEN3(fileName, O_WRONLY | O_APPEND | O_CREAT, 00744)) == -1)
+   {
       qrsh_error(MSG_QRSH_STARTER_CANNOTOPENFILE_SS, fileName, strerror(errno));
       return EXIT_FAILURE;
    }
@@ -856,37 +890,41 @@ static int writeExitCode(int myExitCode, int programExitCode)
 */
 int main(int argc, char *argv[])
 {
-   int   exitCode = 0;
-   char *command  = NULL;
-   char *wrapper = NULL;
-   int  noshell  = 0;
+   int   exitCode, noshell  = 0;
+   char *command, *wrapper = NULL;
 
    /* check for correct usage */
-   if(argc < 2) {
+   if (argc < 2)
+   {
       fprintf(stderr, "usage: %s <job spooldir> [noshell]\n", argv[0]);
       exit(EXIT_FAILURE);        
    }
 
    /* check for noshell */
-   if(argc > 2) {
-      if(strcmp(argv[2], "noshell") == 0) {
+   if (argc > 2)
+   {
+      if (strcmp(argv[2], "noshell") == 0)
+      {
          noshell = 1;
       }
    }
 
-   if(!readConfig(argv[1])) {
+   if (!readConfig(argv[1]))
+   {
       writeExitCode(EXIT_FAILURE, 0);
       exit(EXIT_FAILURE);
    }
 
    /* setup environment */
    command = setEnvironment(argv[1], &wrapper);
-   if(command == NULL) {
+   if (command == NULL)
+   {
       writeExitCode(EXIT_FAILURE, 0);
       exit(EXIT_FAILURE);
    }   
 
-   if(!changeDirectory()) {
+   if (!changeDirectory())
+   {
       writeExitCode(EXIT_FAILURE, 0);
       exit(EXIT_FAILURE);
    }

@@ -31,6 +31,7 @@
 /*___INFO__MARK_END__*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -126,25 +127,19 @@ extern char **environ;
  * This TODO should not be neccessary any more if the command is
  * transferred in the job object.
  */
-static int count_command(char *command) {
-   /* count number of arguments */
-   char *s = command;
-   int argc;
-   int i,end;
-   char delimiter[2];
 
-   snprintf(delimiter, 2, "%c", 0xff);
+static int count_command(char *command)
+{
+   char *s = command, delimiter = '\xff';
+   int i, end, argc = 1;
 
-   /* count arguments */
-   argc = 1;
+   end = strlen(command);
 
-   /* do not use strtok(), strtok() is seeing 2 or more delimiters as one !!! */
-   end =  strlen(command);
-   for(i = 0; i < end ; i++) {
-      if (s[i] == delimiter[0]) {
+   for (i = 0; i < end ; i++)
+   {
+      if (s[i] == delimiter)
          argc++;
-      }
-   } 
+   }
 
    return argc;
 }
@@ -209,7 +204,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    foreground = 0; /* VX sends SIGTTOU if trace messages go to foreground */
 
    /* From here only the son --------------------------------------*/
-   if (!script_file) {
+   if (!script_file)
+   {
       /* output error and exit */
       shepherd_error(1, "received NULL as script file");
    }   
@@ -219,7 +215,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    ** as exec_file the configuration value for xterm
    */
    
-   if (!strcasecmp(script_file, "INTERACTIVE")) {
+   if (!strcasecmp(script_file, "INTERACTIVE"))
+   {
       is_interactive = 1;
 
       shepherd_trace("processing interactive job");
@@ -230,21 +227,23 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    ** login or rsh or rlogin jobs have the qlogin_starter as their job script
    */
    
-   if( !strcasecmp(script_file, "QLOGIN") 
-    || !strcasecmp(script_file, "QRSH")
-    || !strcasecmp(script_file, "QRLOGIN")) {
+   if ( !strcasecmp(script_file, "QLOGIN") ||
+        !strcasecmp(script_file, "QRSH")   ||
+        !strcasecmp(script_file, "QRLOGIN"))
+   {
       shepherd_trace("processing qlogin job");
       is_qlogin_starter = 1;
       is_qlogin = 1;
 
-      if(!strcasecmp(script_file, "QRSH")) {
+      if (!strcasecmp(script_file, "QRSH"))
          is_rsh = 1;
-      } else if(!strcasecmp(script_file, "QRLOGIN")) {
+      else if(!strcasecmp(script_file, "QRLOGIN"))
          is_rlogin = 1;
-      }
+ 
       /* must force to run the qlogin starter as root, since it needs
          access to /dev/something */
-      if (g_new_interactive_job_support == false) {
+      if (g_new_interactive_job_support == false)
+      {
 #if defined(INTERIX)
          if(wl_get_superuser_name(target_user_buffer, TARGET_USER_BUFFER_SIZE)==0) {
             target_user = target_user_buffer;
@@ -252,7 +251,9 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 #else
          target_user = "root";
 #endif
-      } else { /* g_new_interactive_job_support == true */
+      }
+      else
+      { /* g_new_interactive_job_support == true */
          /*
           * Make sure target_user is NULL and will thus be
           * set to get_conf_val("job_owner") below.
@@ -275,26 +276,32 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
     * in case of new IJS when a pty was created.
     * For all other jobs and cases we have to setsid() here, if it's not already set.
     */
-   if (g_newpgrp == -1) {
+   if (g_newpgrp == -1)
+   {
       /* assume we are already in a new session */
       newpgrp = getpgrp();
       /* check if our assumption is true */
-      if (newpgrp != getpid()) {
+      if (newpgrp != getpid())
+      {
          /* were not in a new session - create a new one */
          newpgrp = setsid();
-         if (newpgrp < 0) {
+         if (newpgrp < 0)
+         {
             shepherd_error(1, "setsid() failed, errno=%d, %s", errno, strerror(errno));
          }
       }
-   } else {
+   }
+   else
+   {
       newpgrp = g_newpgrp;
    }
 
    /* run these procedures under a different user ? */
    if (!strcmp(childname, "pe_start") ||
-       !strcmp(childname, "pe_stop") ||
-       !strcmp(childname, "prolog") ||
-       !strcmp(childname, "epilog")) {
+       !strcmp(childname, "pe_stop")  ||
+       !strcmp(childname, "prolog")   ||
+       !strcmp(childname, "epilog"))
+   {
       /* syntax is [<user>@]<path> <arguments> */
       target_user = parse_script_params(&script_file);
    }
@@ -367,13 +374,14 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    shepherd_trace("setting environment");
    sge_set_environment();
 
-	/* Create the "error" and the "exit" status file here.
-	 * The "exit_status" file indicates that the son is started.
-	 *
-	 * We are here (normally) uid=root, euid=admin_user, but we give the
-	 * file ownership to the job owner immediately after opening the file, 
-	 * so the job owner can reopen the file if the exec() fails.
-	 */
+  /* Create the "error" and the "exit" status file here.
+   * The "exit_status" file indicates that the son is started.
+   *
+   * We are here (normally) uid=root, euid=admin_user, but we give the
+   * file ownership to the job owner immediately after opening the file, 
+   * so the job owner can reopen the file if the exec() fails.
+   */
+
    shepherd_trace("Initializing error file");
    shepherd_error_init( );
 
@@ -590,8 +598,10 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       }
    }
 
-   if (fs_stdin) {
-      if (stdin_path_for_fs && strlen(stdin_path_for_fs) > 0) {
+   if (fs_stdin)
+   {
+      if (stdin_path_for_fs && strlen(stdin_path_for_fs) > 0)
+      {
          /* Generate fs_input_tmp_path (etc.) from tmpdir+stdin_path */
          fs_stdin_file = strrchr(stdin_path_for_fs, '/') + 1;
          sprintf(fs_stdin_tmp_path, "%s/%s", tmpdir, fs_stdin_file);
@@ -605,24 +615,26 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          file staging is wanted! */
       /* prolog, pe_start, epilog, pe_stop always get /dev/null as stdin_path,
        only the job gets the file staged stdin file */
-      if (strcmp(childname, "prolog") &&
+      if (strcmp(childname, "prolog")   &&
           strcmp(childname, "pe_start") &&
-          strcmp(childname, "epilog") &&
-          strcmp(childname, "pe_stop")) {
+          strcmp(childname, "epilog")   &&
+          strcmp(childname, "pe_stop"))
+      {
          stdin_path = sge_realloc(stdin_path, strlen(fs_stdin_tmp_path) + 1, 1);
          strcpy(stdin_path, fs_stdin_tmp_path);
       }
    }
 
-   if (fs_stdout) {
-      if (stdout_path && strlen(stdout_path) > 0) {
+   if (fs_stdout)
+   {
+      if (stdout_path && strlen(stdout_path) > 0)
+      {
          fs_stdout_file = strrchr(stdout_path, '/') + 1;
          sprintf(fs_stdout_tmp_path, "%s/%s", tmpdir, fs_stdout_file);
       }
 
-      if (stdout_path && strlen(stdout_path) > 0) {
+      if (stdout_path && strlen(stdout_path) > 0)
          strcpy(fs_stdout_path, stdout_path);
-      }
 
       /* prolog, pe_start, job, epilog and pe_stop get the
          file staged output (and error) file */
@@ -630,17 +642,19 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       strcpy(stdout_path, fs_stdout_tmp_path);
    }
 
-   if (fs_stderr) {
-      if (stderr_path && strlen(stderr_path) > 0) {
+   if (fs_stderr)
+   {
+      if (stderr_path && strlen(stderr_path) > 0)
+      {
          fs_stderr_file = strrchr( stderr_path, '/') + 1;
          sprintf(fs_stderr_tmp_path, "%s/%s", tmpdir, fs_stderr_file);
       }
 
-      if (stderr_path && strlen(stderr_path) > 0) {
+      if (stderr_path && strlen(stderr_path) > 0)
          strcpy(fs_stderr_path, stderr_path);
-      }
   
-      if (!merge_stderr) {
+      if (!merge_stderr)
+      {
          stderr_path = sge_realloc(stderr_path, strlen(fs_stderr_tmp_path) + 1, 1);
          strcpy( stderr_path, fs_stderr_tmp_path );
       }
@@ -658,7 +672,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    set_conf_val("fs_stdout_tmp_path", fs_stdout_tmp_path);
    set_conf_val("fs_stderr_tmp_path", fs_stderr_tmp_path);
   
-#if 0
+#if defined(SHEPHERD_DEBUG)
    /* <DEBUGGING> */
    shepherd_trace("## stdin_path=%s", get_conf_val("stdin_path"));
    shepherd_trace("## stdout_path=%s", get_conf_val("stdout_path"));
@@ -684,21 +698,24 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    /* Now we have to generate the command line for prolog, pe_start, epilog
     * or pe_stop from the config values
     */
-   if (!strcmp(childname, "prolog")) {
-      replace_params( get_conf_val("prolog"),
-         script_file, sizeof(script_file)-1, prolog_epilog_variables );
+   if (!strcmp(childname, "prolog"))
+   {
+      replace_params(get_conf_val("prolog"), script_file, sizeof(script_file)-1, prolog_epilog_variables);
       target_user = parse_script_params(&script_file);
-   } else if (!strcmp(childname, "epilog")) {
-      replace_params( get_conf_val("epilog"),
-         script_file, sizeof(script_file)-1, prolog_epilog_variables );
+   }
+   else if (!strcmp(childname, "epilog"))
+   {
+      replace_params(get_conf_val("epilog"), script_file, sizeof(script_file)-1, prolog_epilog_variables);
       target_user = parse_script_params(&script_file);
-   } else if (!strcmp(childname, "pe_start")) {
-      replace_params( get_conf_val("pe_start"),
-         script_file, sizeof(script_file)-1, pe_variables );
+   }
+   else if (!strcmp(childname, "pe_start"))
+   {
+      replace_params(get_conf_val("pe_start"), script_file, sizeof(script_file)-1, pe_variables);
       target_user = parse_script_params(&script_file);
-   } else if (!strcmp(childname, "pe_stop")) {
-      replace_params( get_conf_val("pe_stop"),
-         script_file, sizeof(script_file)-1, pe_variables );
+   }
+   else if (!strcmp(childname, "pe_stop"))
+   {
+      replace_params(get_conf_val("pe_stop"), script_file, sizeof(script_file)-1, pe_variables);
       target_user = parse_script_params(&script_file);
    }
 
@@ -716,22 +733,28 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       shell_start_mode = "unix_behaviour";
 
    in = 0;
-   if (!strcasecmp(shell_start_mode, "script_from_stdin")) {
+   if (!strcasecmp(shell_start_mode, "script_from_stdin"))
+   {
       in = SGE_OPEN2(script_file, O_RDONLY);
-      if (in == -1) {
+      if (in == -1)
+      {
          shepherd_error(1, "error: can't open %s script file \"%s\": %s", 
                         childname, script_file, strerror(errno));
       }
-   } else {
+   }
+   else
+   {
       /* 
        * Opening a stdin file doesnt make sense for any interactive 
        * job (except qsh) 
        */
-      if (!is_qlogin_starter) {
+      if (!is_qlogin_starter)
+      {
          /* need to open a file as fd0 for qsub jobs */
          in = SGE_OPEN2(stdin_path, O_RDONLY); 
 
-         if (in == -1) {
+         if (in == -1)
+         {
             shepherd_state = SSTATE_OPEN_OUTPUT;
             shepherd_error(1, "error: can't open %s as dummy input file", 
                            stdin_path);
@@ -739,54 +762,58 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       }
    }
 
-   if (in != 0) {
+   if (in != 0)
       shepherd_error(1, "error: fd for in is not 0");
-   }
 
-   if(!is_qlogin_starter) {
+   if (!is_qlogin_starter)
+   {
       /* -cwd or from pw->pw_dir */
-      if (sge_chdir(cwd)) {
+      if (sge_chdir(cwd))
+      {
          shepherd_state = SSTATE_NO_CWD;
          shepherd_error(1, "error: can't chdir to %s: %s", cwd, strerror(errno));
       }
    }
    /* open stdout - not for interactive jobs */
-   if (!is_interactive && !is_qlogin) {
-      if (truncate_stderr_out) {
-         out = SGE_OPEN3(stdout_path, O_WRONLY | O_CREAT | O_APPEND | O_TRUNC, 0644);
-      } else {
-         out = SGE_OPEN3(stdout_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
-      }
+   if (!is_interactive && !is_qlogin)
+   {
+      int flags = O_WRONLY | O_CREAT | O_APPEND;
+
+      if (truncate_stderr_out)
+         flags |= O_TRUNC;
+
+      out = SGE_OPEN3(stdout_path, flags, 0644);
       
-      if (out==-1) {
+      if (out == -1)
+      {
          shepherd_state = SSTATE_OPEN_OUTPUT;
          shepherd_error(1, "error: can't open output file \"%s\": %s", 
                         stdout_path, strerror(errno));
       }
-      
-      if (out!=1) {
+      else if (out != 1)
+      {
          shepherd_error(1, "error: fd out is not 1");
-      }   
+      }
 
       /* open stderr */
-      if (merge_stderr) {
+      if (merge_stderr)
+      {
          shepherd_trace("using stdout as stderr");
          dup2(1, 2);
-      } else {
-         if (truncate_stderr_out) {
-            err = SGE_OPEN3(stderr_path, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, 0644);
-         } else {
-            err = SGE_OPEN3(stderr_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
-         }
+      }
+      else
+      {
+         err = SGE_OPEN3(stderr_path, flags, 0644);
 
-         if (err == -1) {
+         if (err == -1)
+         {
             shepherd_state = SSTATE_OPEN_OUTPUT;
             shepherd_error(1, "error: can't open output file \"%s\": %s", 
                            stderr_path, strerror(errno));
          }
-
 #ifndef __INSURE__
-         if (err!=2) {
+         else if (err != 2)
+         {
             shepherd_trace("unexpected fd");
             shepherd_error(1, "error: fd err is not 2");
          }
@@ -958,7 +985,7 @@ int sge_set_environment()
 {
    const char *const filename = "environment";
    FILE *fp;
-   char buf[10000], *name, *value, err_str[10000];
+   char buf[10000], *name, *value;
    int line=0;
 #if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
    char help_str[100] = "";
@@ -970,13 +997,11 @@ int sge_set_environment()
    int jobid;
 #endif
 #endif
-   const char *new_value = NULL;
 
    setup_environment();
    
-   if (!(fp = fopen(filename, "r"))) {
+   if (!(fp = fopen(filename, "r")))
       shepherd_error(1, "can't open environment file: %s", strerror(errno));
-   }
 
 #if defined(IRIX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5)
    if (shepherd_read_osjobid_file(&jobid, false)) {
@@ -991,7 +1016,9 @@ int sge_set_environment()
    }
 #endif
 
-   while (fgets(buf, sizeof(buf), fp)) {
+   while (fgets(buf, sizeof(buf), fp))
+   {
+      const char *new_value;
 
       line++;
 
@@ -999,30 +1026,32 @@ int sge_set_environment()
          continue;
 
       name = strtok(buf, "=");
-      if (!name) {
+      if (!name)
+      {
          FCLOSE(fp);
          shepherd_error(1, "error reading environment file: line=%d, contents:%s",
                         line, buf);
       }
 
       value = strtok(NULL, "\n");
-      if (value == NULL) {
+      if (value == NULL)
          value = "";
-      }
 
       new_value = sge_replace_substring(value, "\\n", "\n");
-      if (new_value == NULL) {
+      if (new_value == NULL)
+      {
          sge_set_env_value(name, value);
-      } else {
+      }
+      else
+      {
          sge_set_env_value(name, new_value);
-         free((void *)new_value);
+         free((char *)new_value);
       }
    }
 
    FCLOSE(fp);
    return 0;
 FCLOSE_ERROR:
-   sprintf(err_str, MSG_FILE_ERRORCLOSEINGXY_SS, filename, strerror(errno));
    return 1;
 }
 
@@ -1045,14 +1074,18 @@ static void setup_environment()
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
-   if (!inherit_env()) {
-      if (shepherd_env_index < 0) {
+   if (!inherit_env())
+   {
+      if (shepherd_env_index < 0)
+      {
          shepherd_env[0] = NULL;
       }
-      else {
+      else
+      {
          int index = 0;
 
-         while (shepherd_env[index] != NULL) {
+         while (shepherd_env[index] != NULL)
+         {
             FREE(shepherd_env[index]);
             shepherd_env[index] = NULL;
             index++;
@@ -1085,12 +1118,11 @@ char** sge_get_environment()
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
-   if (!inherit_env()) {
+
+   if (!inherit_env())
       return shepherd_env;
-   }
-   else {
+   else
       return environ;
-   }
 }
 
 /****** Shepherd/sge_set_env_value() *******************************************
@@ -1121,26 +1153,32 @@ int sge_set_env_value(const char *name, const char* value)
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
-   if (!inherit_env()) {
+   if (!inherit_env())
+   {
       char *entry = NULL;
       int entry_size = 0;
 
-      if (shepherd_env_index < 0) {
+      if (shepherd_env_index < 0)
+      {
          setup_environment();
       }
-      else if(shepherd_env_index < MAX_NUMBER_OF_ENV_VARS) {
+      else if (shepherd_env_index < MAX_NUMBER_OF_ENV_VARS)
+      {
          /* entry = name + value + '=' + '\0' */
          entry_size = strlen(name) + strlen(value) + 2;
-         entry = (char *)malloc(sizeof (char) * entry_size);
+         entry = malloc(sizeof (char) * entry_size);
 
-         if (entry != NULL) {
+         if (entry != NULL)
+         {
             snprintf(entry, entry_size, "%s=%s", name, value);
             shepherd_env[shepherd_env_index] = entry;
             shepherd_env_index++;
             ret = 0;
          }
       }
-   } else {
+   }
+   else
+   {
       ret = sge_setenv(name, value);
    }
    
@@ -1173,18 +1211,23 @@ const char *sge_get_env_value(const char *name)
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
-   if (!inherit_env()) {
-      if (shepherd_env_index >= 0) {
+   if (!inherit_env())
+   {
+      if (shepherd_env_index >= 0)
+      {
          int index = 0;
 
-         while (shepherd_env[index] != NULL) {
+         while (shepherd_env[index] != NULL)
+         {
             char *entry = shepherd_env[index++];
             char *equals = strchr(entry, '=');
 
-            if (equals != NULL) {
+            if (equals != NULL)
+            {
                equals[0] = '\0';
 
-               if (strcmp(entry, name) == 0) {
+               if (strcmp(entry, name) == 0)
+               {
                   equals[0] = '=';
                   ret = (const char*)&equals[1];
                   break;
@@ -1193,7 +1236,8 @@ const char *sge_get_env_value(const char *name)
          }
       }
    }
-   else {
+   else
+   {
       ret = sge_getenv (name);
    }
    
@@ -1263,21 +1307,20 @@ static char **read_job_args(char **preargs, int extra_args)
       return NULL;
   
    /* copy preargs */ 
-   for (i = 0; i < n_preargs; i++) {
+   for (i = 0; i < n_preargs; i++)
       args[i] = strdup(preargs[i]);
-   }
 
    args[i] = NULL;
 
-   for (i = 0; i < n_job_args; i++) {
+   for (i = 0; i < n_job_args; i++)
+   {
       sprintf(conf_val, "job_arg%lu", i + 1);
       cp = get_conf_val(conf_val);
      
-      if(cp != NULL) {
+      if (cp != NULL)
          args[i + n_preargs] = strdup(cp);
-      } else {
+      else
          args[i + n_preargs] = "";
-      }
    }
    args[i + n_preargs] = NULL;
    return args;
@@ -1311,7 +1354,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
 
    pre_args_ptr = &pre_args[0];
    
-#if 0
+#if defined(SHEPHERD_DEBUG)
    shepherd_trace("childname = %s", childname? childname : "NULL");
    shepherd_trace("shell_path = %s", shell_path ? shell_path : "NULL");
    shepherd_trace("script_file = %s", script_file ? script_file : "NULL");
@@ -1329,14 +1372,15 @@ int use_starter_method /* If this flag is set the shellpath contains the
    */
    if ((atoi(get_conf_val("handle_as_binary")) == 1) &&
        (atoi(get_conf_val("no_shell")) == 0) &&
-       !is_rsh && !is_qlogin && !strcmp(childname, "job") && use_starter_method != 1 ) {
+       !is_rsh && !is_qlogin && !strcmp(childname, "job") && use_starter_method != 1 )
+   {
       int arg_id = 0;
       dstring arguments = DSTRING_INIT;
       int n_job_args;
       char *cp;
       unsigned long i;
 
-#if 0
+#if defined(SHEPHERD_DEBUG)
       shepherd_trace("Case 1: handle_as_binary, shell, no rsh, no qlogin, starter_method=none");
 #endif
 
@@ -1346,16 +1390,20 @@ int use_starter_method /* If this flag is set the shellpath contains the
       sge_dstring_append(&arguments, script_file);
      
       sge_dstring_append(&arguments, " ");
-      for (i=0; i<n_job_args; i++) {
+      for (i=0; i<n_job_args; i++)
+      {
          char conf_val[256];
 
          sprintf(conf_val, "job_arg%lu", i + 1);
          cp = get_conf_val(conf_val);
 
-         if(cp != NULL) {
+         if (cp != NULL)
+         {
             sge_dstring_append(&arguments, cp);
             sge_dstring_append(&arguments, " ");
-         } else {
+         }
+         else
+         {
             sge_dstring_append(&arguments, "\"\"");
          }
       }
@@ -1365,9 +1413,11 @@ int use_starter_method /* If this flag is set the shellpath contains the
       sge_dstring_free(&arguments);
       args = pre_args;
    /* No need to test for binary since this option excludes binary */
-   } else if (!strcasecmp("script_from_stdin", shell_start_mode)) {
+   }
+   else if (!strcasecmp("script_from_stdin", shell_start_mode))
+   {
 
-#if 0
+#if defined(SHEPHERD_DEBUG)
       shepherd_trace("Case 2: script_from_stdin");
 #endif
 
@@ -1382,10 +1432,12 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[2] = NULL;
       args = read_job_args(pre_args, 0);
    /* Binary, noshell jobs have to make it to the else */
-   } else if ( (!strcasecmp("posix_compliant", shell_start_mode) &&
-              (atoi(get_conf_val("handle_as_binary")) == 0)) || (use_starter_method == 1)) {
+   }
+   else if ( (!strcasecmp("posix_compliant", shell_start_mode) &&
+              (atoi(get_conf_val("handle_as_binary")) == 0)) || (use_starter_method == 1))
+   {
                  
-#if 0
+#if defined(SHEPHERD_DEBUG)
       shepherd_trace("Case 3: posix_compliant, no binary or starter_method!=none" );
 #endif
 
@@ -1394,9 +1446,11 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[2] = NULL;
       args = read_job_args(pre_args, 0);
    /* No need to test for binary since this option excludes binary */
-   } else if (!strcasecmp("start_as_command", shell_start_mode)) {
+   }
+   else if (!strcasecmp("start_as_command", shell_start_mode))
+   {
       
-#if 0
+#if defined(SHEPHERD_DEBUG)
       shepherd_trace("Case 4: start_as_command" );
 #endif
 
@@ -1408,10 +1462,12 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[3] = NULL;
       args = pre_args;
    /* No need to test for binary since this option excludes binary */
-   } else if (is_interactive) {
+   }
+   else if (is_interactive)
+   {
       int njob_args;
       
-#if 0
+#if defined(SHEPHERD_DEBUG)
       shepherd_trace("Case 5: interactive");
 #endif
 
@@ -1427,25 +1483,30 @@ int use_starter_method /* If this flag is set the shellpath contains the
       args[njob_args + 6] = get_conf_val("shell_path");
       args[njob_args + 7] = NULL;
    /* No need to test for binary since qlogin handles that itself */
-   } else if (is_qlogin) {
+   }
+   else if (is_qlogin)
+   {
       char *conf_name = NULL;
-#if 0
+#if defined(SHEPHERD_DEBUG)
      shepherd_trace("Case 6: qlogin");
 #endif
       pre_args_ptr[0] = script_file;
-      if (is_rsh) {
+      if (is_rsh)
+      {
          conf_name = "rsh_daemon";
-      } else {
-         if (is_rlogin) {
+      }
+      else
+      {
+         if (is_rlogin)
             conf_name = "rlogin_daemon";
-         } else {
+         else
             conf_name = "qlogin_daemon";
-         }
       }
       pre_args_ptr[1] = get_conf_val(conf_name);
 
       if (check_configured_method(pre_args_ptr[1], conf_name, err_str) != 0
-          && g_new_interactive_job_support == false) {
+          && g_new_interactive_job_support == false)
+      {
          shepherd_state = SSTATE_CHECK_DAEMON_CONFIG;
          shepherd_error(1, err_str);
       }
@@ -1454,18 +1515,21 @@ int use_starter_method /* If this flag is set the shellpath contains the
       pre_args_ptr[3] = NULL;
       args = read_job_args(pre_args, 0);
    /* Here we finally deal with binary, noshell jobs */
-   } else {
+   }
+   else
+   {
       
-#if 0
+#if defined(SHEPHERD_DEBUG)
      shepherd_trace("Case 7: unix_behaviour/raw_exec" );
 #endif
       /*
       ** unix_behaviour/raw_exec
       */
-      if (!strcmp(childname, "job")) {
+      if (!strcmp(childname, "job"))
+      {
          
          int arg_id = 0;
-#if 0
+#if defined(SHEPHERD_DEBUG)
          shepherd_trace("Case 7.1: job" );
 #endif
          if( use_starter_method ) {
@@ -1475,17 +1539,22 @@ int use_starter_method /* If this flag is set the shellpath contains the
          pre_args_ptr[arg_id++] = NULL; 
          
          args = read_job_args(pre_args, 0);
-      } else {
-#if 0
+      }
+      else
+      {
+#if defined(SHEPHERD_DEBUG)
          shepherd_trace("Case 7.2: no job" );
 #endif
          
          /* the script file also contains procedure arguments
             need to disassemble the string and put into args vector */
-         if( use_starter_method ) {
+         if (use_starter_method)
+         {
             pre_args_ptr[0] = shell_path;
             pre_args_ptr[1] = NULL; 
-         } else {
+         }
+         else
+         {
             pre_args_ptr[0] = NULL;
          }
          args = disassemble_proc_args(script_file, pre_args, 0);
@@ -1494,15 +1563,20 @@ int use_starter_method /* If this flag is set the shellpath contains the
       }
    }
 
-   if(is_qlogin) { /* qlogin, qrsh (without command), qrsh <command> */
-      if (g_new_interactive_job_support == false) {
+   if (is_qlogin)
+   {
+      /* qlogin, qrsh (without command), qrsh <command> */
+      if (g_new_interactive_job_support == false)
+      {
          shepherd_trace("start qlogin");
          
          /* build trace string */
          shepherd_trace("calling qlogin_starter(%s, %s);", shepherd_job_dir, args[1]);
 #if defined (SOLARIS)
-         if (is_rlogin) {
-            if (strstr(args[1], "sshd") != NULL) {
+         if (is_rlogin)
+         {
+            if (strstr(args[1], "sshd") != NULL)
+            {
                /* workaround for CR 6215730 */ 
                shepherd_trace("staring an sshd on SOLARIS, do a SETPGRP to be "
                               "able to kill it (qdel)");
@@ -1511,38 +1585,45 @@ int use_starter_method /* If this flag is set the shellpath contains the
          }
 #endif
          qlogin_starter(shepherd_job_dir, args[1], sge_get_environment());
-      } else { /* g_new_interactive_job_support == true */
-         if (is_rsh == false) { /* qlogin, qrsh (without command) */
-            start_qlogin_job(shell_path);
-         } else { /* qrsh <command> */
-            start_qrsh_job();
-         }
       }
-   } else { /* batch job */
+      else
+      {
+         /* g_new_interactive_job_support == true */
+         if (is_rsh == false)                /* qlogin, qrsh (without command) */
+            start_qlogin_job(shell_path);
+         else                                /* qrsh <command> */
+            start_qrsh_job();
+      }
+   }
+   else
+   {
+      /* batch job */
       char *filename = NULL;
 
-      if( use_starter_method ) {
+      if (use_starter_method)
          filename = shell_path;
-      } else if( pre_args_ptr[0] == argv0 ) {
+      else if( pre_args_ptr[0] == argv0 )
          filename = shell_path;
-      } else {
+      else
          filename = script_file;
-      }
 
       /* build trace string */
       pc = err_str;
       sprintf(pc, "execvp(%s,", filename);
       pc += strlen(pc);
-      for (pstr = args; pstr && *pstr; pstr++) {
+      for (pstr = args; pstr && *pstr; pstr++)
+      {
       
          /* calculate rest length in string - 15 is just lazyness for blanks,
           * "..." string, etc.
           */
-         if (strlen(*pstr) < ((sizeof(err_str)  - (pc - err_str) - 15))) {
+         if (strlen(*pstr) < ((sizeof(err_str)  - (pc - err_str) - 15)))
+         {
             sprintf(pc, " \"%s\"", *pstr);
             pc += strlen(pc);
          }
-         else {
+         else
+         {
             sprintf(pc, " ...");
             pc += strlen(pc);
             break;
@@ -1640,7 +1721,8 @@ int use_starter_method /* If this flag is set the shellpath contains the
 #if defined(INTERIX)
          shepherd_trace("not a GUI job, starting directly");
 #endif
-         if (!inherit_env()) {
+         if (!inherit_env())
+         {
             /* The closest thing to execvp that takes an environment pointer is
              * execve.  The problem is that execve does not resolve the path.
              * As there is no reasonable way to resolve the path ourselves, we
@@ -1651,7 +1733,8 @@ int use_starter_method /* If this flag is set the shellpath contains the
             execvp(filename, args);
             environ = tmp;
          }
-         else {
+         else
+         {
             execvp(filename, args);
          }
 
@@ -1959,37 +2042,37 @@ static void start_qlogin_job(const char *shell_path)
    buffer = sge_malloc(size);
    errno = 0;
    ret = getpwuid_r(getuid(), &pw_struct, buffer, size, &pw);
-   if (pw == NULL || ret != 0) {
+   if (pw == NULL || ret != 0)
+   {
       shepherd_error(1, "can't get password entry for user id %d, error: %s (%d)",
          (int)getuid(), strerror(errno), errno);
       /* shepherd_error(1,...) does an exit()! */
    }
    
    i = 0;
-   if (pw->pw_shell != NULL) {
+   if (pw->pw_shell != NULL)
       my_env[i++] = strncat(shell, pw->pw_shell, 256);
-   }
-   if (pw->pw_dir != NULL) {
+
+   if (pw->pw_dir != NULL)
       my_env[i++] = strncat(home, pw->pw_dir, MAXPATHLEN);
-   }
-   if (getenv("TERM") != NULL) {
+
+   if (getenv("TERM") != NULL)
       my_env[i++] = strncat(term, getenv("TERM"), 64);
-   }
-   if (pw->pw_name != NULL) {
+
+   if (pw->pw_name != NULL)
       my_env[i++] = strncat(logname, pw->pw_name, 30);
-   }
+
+   FREE(buffer);
 
    /* we inherit the TZ and HZ variables from execd, which it should have
     * inherited from init, unless execd is started manually with TZ unset in the
     * corresponding shell
     */ 
-   if (getenv("TZ") != NULL) {
+   if (getenv("TZ") != NULL)
       my_env[i++] = strncat(timez, getenv("TZ"), 100);
-   }
 
-   if (getenv("HZ") != NULL) {
+   if (getenv("HZ") != NULL)
       my_env[i++] = strncat(hertz, getenv("HZ"), 10);
-   }
 
 
 #if defined(LINUX) || defined(DARWIN_PPC) || defined(DARWIN_X86)
@@ -1999,8 +2082,6 @@ static void start_qlogin_job(const char *shell_path)
 #endif
    my_env[i] = NULL;
 
-   sge_free(buffer);
-  
    shepherd_trace("execle(%s, %s, NULL, env)", shell_path, minusname);
    execle(shell_path, minusname, NULL, my_env);
 }
@@ -2037,7 +2118,6 @@ static void start_qrsh_job(void)
    const char *arch = NULL;
    char *command = NULL;
    char *buf = NULL;
-   char cwd[SGE_PATH_MAX+1];
    char *args[9];
    int  nargs;
    int  i=0;
@@ -2047,32 +2127,35 @@ static void start_qrsh_job(void)
    command = (char*)sge_get_env_value("QRSH_COMMAND");
    nargs = count_command(command);
 
-   if (nargs > 0) {
-      buf = (char*)malloc(strlen(command)+2049);
-
+   if (nargs > 0)
+   {
       sge_root = sge_get_root_dir(0, NULL, 0, 1);
       arch = sge_get_arch();
-      getcwd(cwd, SGE_PATH_MAX);
-      
+
       if (sge_root == NULL || arch == NULL) {
          shepherd_trace("reading environment SGE_ROOT and ARC failed");
          return;
       }
+
+      buf = malloc(strlen(command)+2049);
       snprintf(buf, 2048, "%s/utilbin/%s/qrsh_starter", sge_root, arch);
 
       args[0] = buf;
       args[1] = shepherd_job_dir;
-      if (g_noshell == 1) {
+
+      if (g_noshell == 1)
+      {
          args[2] = "noshell";
          args[3] = NULL;
-      } else {
+      }
+      else
+      {
          args[2] = NULL;
       }
    }
 
-   for (i=0; args[i] != NULL; i++) {
+   for (i=0; args[i] != NULL; i++)
       shepherd_trace("args[%d] = \"%s\"", i, args[i]);
-   }
 
    shepherd_trace("execvp(%s, ...);", args[0]);
    execvp(args[0], args);

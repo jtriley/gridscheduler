@@ -158,13 +158,15 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
 {
    bool ret = true;
    const char *param = sge_dstring_get_string(s);
-   const char *value = sge_dstring_get_string(a);
 
    DENTER(TOP_LAYER, "jsv_handle_param_command");
-   if (param != NULL) {
+
+   if (param != NULL)
+   {
       bool skip_check = false;
       lList *local_answer_list = NULL;
       lListElem *new_job = lGetRef(jsv, JSV_new_job);
+      const char *value = sge_dstring_get_string(a);
 
       /*
        * If we get a "__JSV_TEST_RESULT" then this code is triggered as part of a
@@ -189,8 +191,10 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
             NULL
          };
 
-         while (read_only_param[i] != NULL) {
-            if (strcmp(param, read_only_param[i]) == 0) {
+         while (read_only_param[i] != NULL)
+         {
+            if (strcmp(param, read_only_param[i]) == 0)
+            {
                answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
                                        MSG_JSV_PARSE_READ_S, param);
                ret = false;
@@ -204,7 +208,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
        * Handle boolean parameter.
        * -b -j -notify -shell -R -r
        */
-      if (ret) {
+      if (ret)
+      {
          int i = 0;
          const char *read_only_param[] = {
             "b", "j", "notify", "shell", "R", "r",
@@ -212,14 +217,19 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
          };
          bool is_readonly = false;
 
-         while (read_only_param[i] != NULL) {
-            if (strcmp(param, read_only_param[i]) == 0) {
+         while (read_only_param[i] != NULL)
+         {
+            if (strcmp(param, read_only_param[i]) == 0)
+            {
                is_readonly = true;
-               if (value == NULL) {
+               if (value == NULL)
+               {
                   answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
                                           MSG_JSV_PARSE_BOOL_S, param);
                   ret = false;
-               } else if (strcmp(value, "y") != 0 && strcmp(value, "n") != 0) {
+               }
+               else if (strcmp(value, "y") != 0 && strcmp(value, "n") != 0)
+               {
                   answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
                                           MSG_JSV_PARSE_VAL_SS, param, value);
                   ret = false;
@@ -228,20 +238,34 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
             }
             i++;
          }
-         if (ret && is_readonly) {
-            if (strcmp(param, "b") == 0) {
+         if (ret && is_readonly)
+         {
+            if (strcmp(param, "b") == 0)
+            {
                job_set_binary(new_job, strcmp(value, "y") == 0 ? true : false);
-            } else if (strcmp(param, "j") == 0) {
+            }
+            else if (strcmp(param, "j") == 0)
+            {
                lSetBool(new_job, JB_merge_stderr, strcmp(value, "y") == 0 ? true : false);
-            } else if (strcmp(param, "notify") == 0) {
+            }
+            else if (strcmp(param, "notify") == 0)
+            {
                lSetBool(new_job, JB_notify, strcmp(value, "y") == 0 ? true : false);
-            } else if (strcmp(param, "R") == 0) {
+            }
+            else if (strcmp(param, "R") == 0)
+            {
                lSetBool(new_job, JB_reserve, strcmp(value, "y") == 0 ? true : false);
-            } else if (strcmp(param, "r") == 0) {
+            }
+            else if (strcmp(param, "r") == 0)
+            {
                lSetUlong(new_job, JB_restart, strcmp(value, "y") == 0 ? 1 : 0);
-            } else if (strcmp(param, "shell") == 0) {
+            }
+            else if (strcmp(param, "shell") == 0)
+            {
                job_set_no_shell(new_job, strcmp(value, "y") == 0 ? true : false);
-            } else {
+            }
+            else
+            {
                answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
                                        MSG_JSV_PARSE_VAL_SS, param);
                ret = false;
@@ -253,7 +277,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
        * Handle string parameter 
        *    -A -ckpt -cwd -N -pe <pe_name> -P 
        */
-      if (ret) {
+      if (ret)
+      {
          int i = 0;
          const char *string_param[] = {
             "A", "ckpt", "cwd", "N", "pe_name", "P",
@@ -264,26 +289,36 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
             0
          };
 
-         while (string_param[i] != NULL) {
+         while (string_param[i] != NULL)
+         {
             int attribute = string_attribute[i];
 
-            if (strcmp(param, string_param[i]) == 0) {
-               if (value == NULL) {
+            if (strcmp(param, string_param[i]) == 0)
+            {
+               if (value == NULL)
+               {
                   /* 
                    * - jobs without job name are rejected 
                    * - resetting ckpt name also resets ckpt attribute
                    */
-                  if (strcmp(param, "N") == 0) {
+                  if (strcmp(param, "N") == 0)
+                  {
                      answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, 
                                              ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_NAME_S, param);
                      ret = false;
-                  } else if (strcmp(param, "ckpt") == 0) {
+                  }
+                  else if (strcmp(param, "ckpt") == 0)
+                  {
                      lSetUlong(new_job, JB_checkpoint_attr, NO_CHECKPOINT);
                      lSetString(new_job, attribute, NULL); 
-                  } else {
+                  }
+                  else
+                  {
                      lSetString(new_job, attribute, NULL); 
                   }
-               } else { 
+               }
+               else
+               { 
                   lSetString(new_job, attribute, value);
                }
                break;
@@ -296,7 +331,8 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
        * Handle path list parameters
        *    -o -i -e -S
        */
-      if (ret) {
+      if (ret)
+      {
          int i = 0;
          const char *path_list_param[] = {
             "o", "i", "e", "S",
@@ -307,22 +343,27 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
             0
          };
 
-         while (path_list_param[i] != NULL) {
-            if (strcmp(path_list_param[i], param) == 0) {
+         while (path_list_param[i] != NULL)
+         {
+            if (strcmp(path_list_param[i], param) == 0)
+            {
                lList *path_list = NULL;
                int attribute = path_list_attribute[i];
 
-               if (value != NULL) {
+               if (value != NULL)
+               {
                   int lret = cull_parse_path_list(&path_list, value);
 
-                  if (lret) {
+                  if (lret)
+                  {
                      answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, 
                                              ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, 
                                              param, value);
                      ret = false;
                   }
                }
-               if (ret) {
+               if (ret)
+               {
                   lSetList(new_job, attribute, path_list); 
                }
                break;
@@ -340,23 +381,31 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
             u_long32 length;
             int i;
             const char *id_string = param + 6;
-            if (!isdigit(id_string[0])) {
-               if (value) {
+            if (!isdigit(id_string[0]))
+            {
+               if (value)
+               {
                   u_long32 to_create = 0;
                   u_long32 to_remove = 0;
 
                   length = lGetNumberOfElem(arg_list);
                   ret &= ulong_parse_from_string(&id, &local_answer_list, value);
-                  if (ret) {
-                     if (id > length) {
+                  if (ret)
+                  {
+                     if (id > length)
+                     {
                         to_create = id - length;
-                        while (to_create > 0) {
+                        while (to_create > 0)
+                        {
                            lAddElemStr(&arg_list, ST_name, "", ST_Type);
                            to_create--;
                         }
-                     } else {
+                     }
+                     else
+                     {
                         to_remove = length - id;
-                        while (to_remove > 0) {
+                        while (to_remove > 0)
+                        {
                            lListElem *tmp = lLast(arg_list);
                            lRemoveElem(arg_list, &tmp);
                            to_remove--;
@@ -364,14 +413,18 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                      }
                   }
                }
-            } else {
+            }
+            else
+            {
                u_long32 to_create = 0;
                length = lGetNumberOfElem(arg_list);
                ret &= ulong_parse_from_string(&id, &local_answer_list, id_string);
 
-               if (id > length) {
+               if (id > length)
+               {
                   to_create = id - length + 1;
-                  while (to_create > 0) {
+                  while (to_create > 0)
+                  {
                      lAddElemStr(&arg_list, ST_name, "", ST_Type);
                      to_create--;
                   }
@@ -379,8 +432,10 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
 
                length = lGetNumberOfElem(arg_list);
                elem = lFirst(arg_list);
-               for (i = 0; i <= length - 1; i++) {
-                  if (i == id) {
+               for (i = 0; i <= length - 1; i++)
+               {
+                  if (i == id)
+                  {
                      lSetString(elem, ST_name, (value != NULL) ? value : "");
                      break;
                   }
@@ -392,17 +447,21 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
 
       /* -a */
       {
-         if (ret && strcmp("a", param) == 0) {
+         if (ret && strcmp("a", param) == 0)
+         {
             u_long32 timeval = 0;
 
-            if (value != NULL) {
+            if (value != NULL)
+            {
                int lret = ulong_parse_date_time_from_string(&timeval, &local_answer_list, value);
 
-               if (!lret) {
+               if (!lret)
+               {
                   ret = false;
                }
             }
-            if (ret) {
+            if (ret)
+            {
                lSetUlong(new_job, JB_execution_time, timeval);
             }
          }
@@ -411,19 +470,23 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
 
       /* -ac */
       {
-         if (ret && strcmp("ac", param) == 0) {
+         if (ret && strcmp("ac", param) == 0)
+         {
             lList *context_list = NULL;
 
-            if (value != NULL) {
+            if (value != NULL)
+            {
                int lret = var_list_parse_from_string(&context_list, value, 0);
 
-               if (lret) {
+               if (lret)
+               {
                   answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                           MSG_JSV_PARSE_VAL_SS, param, value);
                   ret = false;
                }
             }
-            if (ret) {
+            if (ret)
+            {
                lSetList(new_job, JB_context, context_list);
             }
          }
@@ -431,22 +494,27 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
 
       /* -ar */
       {
-         if (ret && strcmp("ar", param) == 0) {
+         if (ret && strcmp("ar", param) == 0)
+         {
             u_long32 id = 0;
 
-            if (value != NULL) {
+            if (value != NULL)
+            {
                lList *ar_id_list = NULL;
                ret &= ulong_list_parse_from_string(&ar_id_list, &local_answer_list, value, ",");
-               if (ret) {
+               if (ret)
+               {
                   lListElem *first = lFirst(ar_id_list);
 
-                  if (first != NULL) {
+                  if (first != NULL)
+                  {
                      id = lGetUlong(first, ULNG_value);
                   }
                }
                lFreeList(&ar_id_list);
             }
-            if (ret) {
+            if (ret)
+            {
                lSetUlong(new_job, JB_ar, id);
             }
          }
@@ -455,26 +523,34 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
       /* -c <interval> */
       /* -c <occasion> */
       {
-         if (ret && strcmp("c_interval", param) == 0) {
+         if (ret && strcmp("c_interval", param) == 0)
+         {
             u_long32 timeval = 0;
 
-            if (value != NULL) {
+            if (value != NULL)
+            {
                int lret = ulong_parse_date_time_from_string(&timeval, &local_answer_list, value);
 
-               if (!lret) {
+               if (!lret)
+               {
                   ret = false;
                }
             }
-            if (ret) {
+            if (ret)
+            {
                lSetUlong(new_job, JB_checkpoint_interval, timeval);
             }
          }
-         if (ret && strcmp("c_occasion", param) == 0) {
+         if (ret && strcmp("c_occasion", param) == 0)
+         {
             int lret = sge_parse_checkpoint_attr(value);
 
-            if (lret != 0) {
+            if (lret != 0)
+            {
                lSetUlong(new_job, JB_checkpoint_interval, lret);
-            } else {
+            }
+            else
+            {
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                        MSG_JSV_PARSE_VAL_SS, param, value);
                ret = false;
@@ -896,69 +972,92 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
             int cores = 0;
 
             /* 1) */
-            if (ret && strncmp("binding_exp_socket", param, strlen("binding_exp_socket")) == 0) {
-               const char *number = param + strlen("binding_exp_socket");
+            if (ret && strncmp("binding_exp_socket", param, sizeof("binding_exp_socket")-1) == 0)
+            {
+               const char *number = param + sizeof("binding_exp_socket")-1;
 
-               if (value != NULL) {
-                  if (!parse_ulong_val(NULL, &new_socket_id, TYPE_INT, number, NULL, 0)) {
+               if (value != NULL)
+               {
+                  if (!parse_ulong_val(NULL, &new_socket_id, TYPE_INT, number, NULL, 0))
+                  {
                      answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, 
                                              ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, 
                                              param, value);
                      ret = false;
-                  } else {
-                     if (!parse_ulong_val(NULL, &new_socket, TYPE_INT, value, NULL, 0)) {
+                  }
+                  else
+                  {
+                     if (!parse_ulong_val(NULL, &new_socket, TYPE_INT, value, NULL, 0))
+                     {
                         answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                                 MSG_JSV_PARSE_VAL_SS, param, value);
                         ret = false;
-                     } else {
+                     }
+                     else
+                     {
                         has_new_socket = true;
                      }
                   }
                } 
             }
             /* 2) */
-            if (ret && strncmp("binding_exp_core", param, strlen("binding_exp_core")) == 0) {
-               const char *number = param + strlen("binding_exp_core");
+            if (ret && strncmp("binding_exp_core", param, sizeof("binding_exp_core")-1) == 0)
+            {
+               const char *number = param + sizeof("binding_exp_core")-1;
 
-               if (value != NULL) {
-                  if (!parse_ulong_val(NULL, &new_core_id, TYPE_INT, number, NULL, 0)) {
+               if (value != NULL)
+               {
+                  if (!parse_ulong_val(NULL, &new_core_id, TYPE_INT, number, NULL, 0))
+                  {
                      answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, 
                                              ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, 
                                              param, value);
                      ret = false;
-                  } else {
-                     if (!parse_ulong_val(NULL, &new_core, TYPE_INT, value, NULL, 0)) {
+                  }
+                  else
+                  {
+                     if (!parse_ulong_val(NULL, &new_core, TYPE_INT, value, NULL, 0))
+                     {
                         answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                                 MSG_JSV_PARSE_VAL_SS, param, value);
                         ret = false;
-                     } else {
+                     }
+                     else
+                     {
                         has_new_core = true;
                      }
                   }
                } 
             }
             /* 3) */
-            if (ret && strcmp("binding_exp_n", param) == 0) {
+            if (ret && strcmp("binding_exp_n", param) == 0)
+            {
 
-               if (value != NULL) {
-                  if (!parse_ulong_val(NULL, &new_length, TYPE_INT, value, NULL, 0)) {
+               if (value != NULL)
+               {
+                  if (!parse_ulong_val(NULL, &new_length, TYPE_INT, value, NULL, 0))
+                  {
                      answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                              MSG_JSV_PARSE_VAL_SS, param, value);
                      ret = false;
-                  } else {
+                  }
+                  else
+                  {
                      has_new_length = true;
                   }
                } 
             }
             /* 4) */
-            if (ret) {
+            if (ret)
+            {
                bool do_resize = false;
                const char *old_param_exp_value = lGetString(binding_elem, BN_parameter_explicit);
 
                ret &= binding_explicit_extract_sockets_cores(old_param_exp_value,
                          &socket_array, &sockets, &core_array, &cores);
 
-               if (!ret) {
+               if (!ret)
+               {
                   /* 
                    * parsing will only fail if explicit binding list contains
                    * string 'no_explicit_binding' and should now be changed to 
@@ -970,28 +1069,35 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                   cores = 0;
                   ret = true;
                } 
-               if (ret) {
-                  if (has_new_length) {
+               if (ret)
+               {
+                  if (has_new_length)
+                  {
                      do_resize = true;
                   }
-                  if (has_new_socket && new_socket_id + 1 > sockets) {
+                  if (has_new_socket && new_socket_id + 1 > sockets)
+                  {
                      do_resize = true;
                      new_length = new_socket_id + 1;
                   }
-                  if (has_new_core && new_core_id + 1 > cores) {
+                  if (has_new_core && new_core_id + 1 > cores)
+                  {
                      do_resize = true;
                      new_length = new_core_id + 1;
                   }
 
-                  if (do_resize) {
+                  if (do_resize)
+                  {
                      int i;
 
                      socket_array = (int *)realloc(socket_array, new_length * sizeof(int));
                      core_array = (int *)realloc(core_array, new_length * sizeof(int));
-                     for (i = sockets; i < new_length; i++) {
+                     for (i = sockets; i < new_length; i++)
+                     {
                         socket_array[i] = 0;
                      }
-                     for (i = cores; i < new_length; i++) {
+                     for (i = cores; i < new_length; i++)
+                     {
                         core_array[i] = 0;
                      }
                      sockets = new_length;
@@ -999,14 +1105,17 @@ jsv_handle_param_command(sge_gdi_ctx_class_t *ctx, lListElem *jsv, lList **answe
                   }
 
                   /* 5) */
-                  if (has_new_socket) {
+                  if (has_new_socket)
+                  {
                      socket_array[new_socket_id] = new_socket;
                   }
-                  if (has_new_core) {
+                  if (has_new_core)
+                  {
                      core_array[new_core_id] = new_core;
                   }
                }
-               if (ret) {
+               if (ret)
+               {
                   dstring socket_core_string = DSTRING_INIT;
 
                   binding_printf_explicit_sockets_cores(&socket_core_string, 
@@ -2789,37 +2898,42 @@ jsv_cull_attr2switch_name(int cull_attr, lListElem *job)
    DRETURN(ret);
 }
 
-bool
-jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListElem *job) 
+bool jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListElem *job) 
 {
    bool ret = false;
 
    DENTER(TOP_LAYER, "jsv_is_modify_rejected");
-   if (job != NULL) {
-      const char *jsv_allowed_mod = mconf_get_jsv_allowed_mod();
+
+   if (job != NULL)
+   {
       const char *jsv_url = mconf_get_jsv_url();
 
-      if (jsv_url && strcasecmp(jsv_url, "none") != 0) {
+      if (jsv_url && strcasecmp(jsv_url, "none") != 0)
+      {
+
+         const char *jsv_allowed_mod = mconf_get_jsv_allowed_mod();
 
          /*
           * Check now if there are allowed modifications.
           */
-         if (jsv_allowed_mod && strcmp(jsv_allowed_mod, "none") != 0) {
+         if (jsv_allowed_mod && strcmp(jsv_allowed_mod, "none") != 0)
+         {
             const lDescr *descr = lGetElemDescr(job);
-            const lDescr *pointer = NULL;
-            lList *allowed_switches = NULL;
-            lList *got_switches = NULL;
-            lListElem *allowed = NULL;
+            const lDescr *pointer;
+            lList *allowed_switches = NULL, *got_switches = NULL;
+            lListElem *allowed;
 
             /*
              * Transform the cull fields into a list of corresponding 
              * qalter switch names.
              */
             str_list_parse_from_string(&allowed_switches, jsv_allowed_mod, ",");
-            for (pointer = descr; pointer->nm != NoName; pointer++) {
+            for (pointer = descr; pointer->nm != NoName; pointer++)
+            {
                const char *swch = jsv_cull_attr2switch_name(pointer->nm, job);
              
-               if (swch != NULL) {
+               if (swch != NULL)
+               {
                   lAddElemStr(&got_switches, ST_name, swch, ST_Type);
                }
             }
@@ -2830,7 +2944,8 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
              * was not specified.
              */
             allowed = lGetElemStr(allowed_switches, ST_name, "w");
-            if (allowed == NULL) {
+            if (allowed == NULL)
+            {
                lAddElemStr(&allowed_switches, ST_name, "w", ST_Type);
             }
 
@@ -2840,10 +2955,12 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
              * send the information of -h.
              */
             allowed = lGetElemStr(allowed_switches, ST_name, "h");
-            if (allowed != NULL) {
+            if (allowed != NULL)
+            {
                allowed = lGetElemStr(allowed_switches, ST_name, "t");
 
-               if (allowed == NULL) {
+               if (allowed == NULL)
+               {
                   lAddElemStr(&allowed_switches, ST_name, "t", ST_Type);
                }
             }
@@ -2852,14 +2969,15 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
              * Remove the allowed switches from the list of switches which were
              * applied to the job we got.
              */
-            for_each(allowed, allowed_switches) {
+            for_each(allowed, allowed_switches)
+            {
                const char *name = lGetString(allowed, ST_name);
                const void *iterator = NULL;
-               lListElem *got;
-               lListElem *got_next;
+               lListElem *got, *got_next;
 
                got_next = lGetElemStrFirst(got_switches, ST_name, name, &iterator);
-               while ((got = got_next) != NULL) {
+               while ((got = got_next) != NULL)
+               {
                   got_next = lGetElemStrNext(got_switches, ST_name, name, &iterator);
 
                   lRemoveElem(got_switches, &got);
@@ -2869,17 +2987,24 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
             /*
              * If there are no remaining switches then the request will not be rejected.
              */
-            if (lGetNumberOfElem(got_switches) == 0) {
+            if (lGetNumberOfElem(got_switches) == 0)
+            {
                ret = false;
-            } else {
+            }
+            else
+            {
                lListElem *not_allowed;
                dstring switches = DSTRING_INIT;
                bool first = true;
 
-               for_each (not_allowed, got_switches) {
-                  if (first) {
+               for_each (not_allowed, got_switches)
+               {
+                  if (first)
+                  {
                      first = false;
-                  } else {
+                  }
+                  else
+                  {
                      sge_dstring_append_char(&switches, ',');
                   } 
                   sge_dstring_append(&switches, lGetString(not_allowed, ST_name));
@@ -2890,13 +3015,17 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
                ret = true;
             }
 
-            if (allowed_switches) {
+            if (allowed_switches)
+            {
                lFreeList(&allowed_switches);
             }
-            if (got_switches) {
+            if (got_switches)
+            {
                lFreeList(&got_switches);
             }
-         } else {
+         }
+         else
+         {
             /*
              * JSV is active but no modification allowed
              */
@@ -2904,11 +3033,9 @@ jsv_is_modify_rejected(sge_gdi_ctx_class_t *context, lList **answer_list, lListE
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = true;
          }
+         FREE(jsv_allowed_mod);
       }
-      FREE(jsv_allowed_mod);
       FREE(jsv_url);
    }
    DRETURN(ret);
 }
-
-

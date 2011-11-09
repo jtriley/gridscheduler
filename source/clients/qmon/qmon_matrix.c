@@ -498,12 +498,8 @@ Cardinal size
 
 
 /*-------------------------------------------------------------------------*/
-void qmonSetNxN(
-Widget w,
-lList *lp,
-int num_fields,
-...
-) {
+void qmonSetNxN(Widget w, lList *lp, int num_fields, ...)
+{
    lListElem *ep;
    int i, row;
    int max_rows;
@@ -519,16 +515,16 @@ int num_fields,
    /* clear the area */
    XtVaSetValues(w, XmNcells, NULL, NULL);
    
-   if (!lp) {
+   if (!lp)
+   {
       DEXIT;
       return;
    }
 
-   field = (int *)malloc(num_fields*sizeof(int));
-   col = (const char **)malloc(num_fields*sizeof(char *));
-   if (field == NULL || col == NULL) {
+   field = malloc(num_fields*sizeof(int));
+   col   = malloc(num_fields*sizeof(char *));
+   if (field == NULL || col == NULL)
       abort();
-   }
 
    va_start(ap, num_fields);
    for(i=0; i<num_fields; i++)
@@ -536,8 +532,10 @@ int num_fields,
 
    XtVaGetValues(w, XmNrows, &max_rows, NULL);
 
-   for (ep = lFirst(lp), row = 0; ep; ep = lNext(ep), row++) {
-      if (row == max_rows) {
+   for (ep = lFirst(lp), row = 0; ep; ep = lNext(ep), row++)
+   {
+      if (row == max_rows)
+      {
          XbaeMatrixAddRows(w, 
                            max_rows, 
                            NULL,       /* empty rows  */
@@ -553,9 +551,10 @@ int num_fields,
        * get column values
        */
 
-      for(i=0; i<num_fields; i++) {
-
-         switch (lGetType(lGetListDescr(lp), field[i])) {
+      for(i=0; i<num_fields; i++)
+      {
+         switch (lGetType(lGetListDescr(lp), field[i]))
+         {
             case lStringT:
                col[i] = (StringConst)lGetString(ep, field[i]);
                break;
@@ -584,13 +583,15 @@ int num_fields,
          }
       }
 
-      if (col[0]) {
+      if (col[0])
+      {
          /* FIX_CONST_GUI */
          for(i=0; i<num_fields; i++)
             XbaeMatrixSetCell(w, row, i, col[i] ? (String)col[i] : "");
       }
    }
 
+   va_end(ap);
    free(field);
    free(col);
        
@@ -614,11 +615,10 @@ int num_fields,
 
    DENTER(GUI_LAYER, "qmonGetNxN");
 
-   field = (int *)malloc(num_fields*sizeof(int));
-   col = (char **)malloc(num_fields*sizeof(char *));
-   if (field == NULL || col == NULL) {
+   field = malloc(num_fields*sizeof(int));
+   col   = malloc(num_fields*sizeof(char *));
+   if (field == NULL || col == NULL)
       abort();
-   }
 
    va_start(ap, num_fields);
    for(i=0; i<num_fields; i++)
@@ -626,13 +626,18 @@ int num_fields,
 
    XtVaGetValues(w, XmNrows, &max_rows, NULL);
    
-   for (row=0; row<max_rows; row++) {
+   for (row=0; row<max_rows; row++)
+   {
       memset(col, 0, num_fields*sizeof(char *));
+
       for(i=0; i<num_fields; i++)
          col[i] = XbaeMatrixGetCell(w, row, i);
-      if (col[0] && col[0][0] != '\0') {
+
+      if (col[0] && col[0][0] != '\0')
+      {
          if (!lp)
             lp = lCreateList(XtName(w), dp);
+
          ep = lCreateElem(dp);
          lAppendElem(lp, ep);
 
@@ -640,8 +645,10 @@ int num_fields,
           * retrieve values from columns
           */
 
-         for(i=0; i<num_fields; i++) {
-            switch(lGetType(lGetListDescr(lp), field[i])) {
+         for(i=0; i<num_fields; i++)
+         {
+            switch(lGetType(lGetListDescr(lp), field[i]))
+            {
                case lStringT: 
                   lSetString(ep, field[i], col[i] ? col[i] : "" );
                   break;
@@ -661,6 +668,7 @@ int num_fields,
          continue;
    }
 
+   va_end(ap);
    free(field);
    free(col);
 

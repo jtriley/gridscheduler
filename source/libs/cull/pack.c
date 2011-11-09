@@ -95,15 +95,6 @@
 ****************************************************************************
 */
 
-/* -------------------------------
-
-   get chunk_size
-
- */
-int pack_get_chunk(void)
-{
-   return CHUNK;
-}
 
 /****** cull/pack/init_packbuffer() *******************************************
 *  NAME
@@ -153,43 +144,44 @@ int pack_get_chunk(void)
 *     cull/pack/pack_set_chunk()
 *     gdi/request_internal/sge_gdi_packet_get_pb_size()
 *******************************************************************************/
-int 
-init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) 
+int init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count) 
 {
    DENTER(PACK_LAYER, "init_packbuffer");
 
-   if (pb == NULL) {
+   if (pb == NULL)
+   {
       ERROR((SGE_EVENT, MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT));
       DEXIT;
       return PACK_FORMAT;
    }   
 
-   if (!just_count) {
-      if (initial_size == 0) {
+   if (!just_count)
+   {
+      if (initial_size == 0)
          initial_size = CHUNK;
-      } else {
+      else
          initial_size += 2 * INTSIZE;  /* space for version information */
-      }
       
       memset(pb, 0, sizeof(sge_pack_buffer));
  
       pb->head_ptr = malloc(initial_size);
-      if (pb->head_ptr == NULL) {
+      if (pb->head_ptr != NULL)
+      {
+         pb->cur_ptr    = pb->head_ptr;
+         pb->mem_size   = initial_size;
+         pb->version    = CULL_VERSION;
+
+         packint(pb, 0);              /* pad 0 byte -> error handing in former versions */
+         packint(pb, pb->version);    /* version information is included in buffer      */
+      }
+      else
+      {
          ERROR((SGE_EVENT, MSG_CULL_NOTENOUGHMEMORY_D, initial_size));
          DRETURN(PACK_ENOMEM);
       }
-      pb->cur_ptr = pb->head_ptr;
-      pb->mem_size = initial_size;
-
-      pb->cur_ptr = pb->head_ptr;
-      pb->mem_size = initial_size;
-
-      pb->bytes_used = 0;
-      pb->just_count = 0;
-      pb->version = CULL_VERSION;
-      packint(pb, 0);              /* pad 0 byte -> error handing in former versions */
-      packint(pb, pb->version);    /* version information is included in buffer      */
-   } else {
+   }
+   else
+   {
       pb->head_ptr = pb->cur_ptr = NULL;
       pb->mem_size = 0;
       pb->bytes_used = 0;
@@ -206,45 +198,50 @@ init_packbuffer(sge_pack_buffer *pb, int initial_size, int just_count)
  NOTES
     MT-NOTE: init_packbuffer_from_buffer() is MT safe (assumptions)
  **************************************************************/
-int 
-init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) 
+int init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) 
 {
    DENTER(PACK_LAYER, "init_packbuffer_from_buffer");
 
-   if (!pb && !buf) {
+   if (!pb && !buf)
+   {
       DRETURN(PACK_FORMAT);
-   }   
+   }
 
    memset(pb, 0, sizeof(sge_pack_buffer));
 
    pb->head_ptr = buf;
    pb->cur_ptr = buf;
    pb->mem_size = buflen;
-   pb->bytes_used = 0;
 
    /* check cull version (only if buffer contains any data) */
-   if (buflen > 0) {
+   if (buflen > 0)
+   {
       int ret;
       u_long32 pad, version;
 
-      if((ret = unpackint(pb, &pad)) != PACK_SUCCESS) {
+      if ((ret = unpackint(pb, &pad)) != PACK_SUCCESS)
+      {
          DEXIT;
          return ret;
       } 
 
-      if((ret = unpackint(pb, &version)) != PACK_SUCCESS) {
+      if ((ret = unpackint(pb, &version)) != PACK_SUCCESS)
+      {
          DEXIT;
          return ret;
       }
 
-      if(pad != 0 || version != CULL_VERSION) {
+      if (pad != 0 || version != CULL_VERSION)
+      {
          ERROR((SGE_EVENT, MSG_CULL_PACK_WRONG_VERSION_XX, (unsigned int) version, CULL_VERSION));
          DEXIT;
          return PACK_VERSION;
       }
 
       pb->version = version;
-   } else {
+   }
+   else
+   {
       pb->version = CULL_VERSION;
    }
 
@@ -254,19 +251,19 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen)
 
 /**************************************************************/
 /* MT-NOTE: clear_packbuffer() is MT safe */
-void clear_packbuffer(sge_pack_buffer *pb) {
-   if (pb != NULL) {
+void clear_packbuffer(sge_pack_buffer *pb)
+{
+   if (pb != NULL)
       FREE(pb->head_ptr);
-   }
+
    return;
 }
 
 /*************************************************************
  look whether pb is filled
  *************************************************************/
-int pb_filled(
-sge_pack_buffer *pb 
-) {
+int pb_filled(sge_pack_buffer *pb)
+{
    /* do we have more bytes used than the version information? */
    return (pb_used(pb) > (2 * INTSIZE));
 }
@@ -275,18 +272,16 @@ sge_pack_buffer *pb
  look for the number of bytes that are unused
  i.e. that are not yet consumed
  *************************************************************/
-int pb_unused(
-sge_pack_buffer *pb 
-) {
+int pb_unused(sge_pack_buffer *pb)
+{
    return (pb->mem_size - pb->bytes_used);
 }
 
 /*************************************************************
  look for the number of bytes that are used
  *************************************************************/
-int pb_used(
-sge_pack_buffer *pb 
-) {
+int pb_used(sge_pack_buffer *pb)
+{
    return pb->bytes_used;
 }
 
@@ -304,16 +299,20 @@ sge_pack_buffer *pb
  */
 int packint(sge_pack_buffer *pb, u_long32 i) 
 {
-   u_long32 J=0;
-
    DENTER(PACK_LAYER, "packint");
 
-   if (!pb->just_count) {
-      if (pb->bytes_used + INTSIZE > pb->mem_size) {
+   if (!pb->just_count)
+   {
+      u_long32 J;
+
+      if (pb->bytes_used + INTSIZE > pb->mem_size)
+      {
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+
          pb->mem_size += CHUNK;
          pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!pb->head_ptr) {
+         if (!pb->head_ptr)
+         {
             DEXIT;
             return PACK_ENOMEM;
          }
@@ -333,12 +332,11 @@ int packint(sge_pack_buffer *pb, u_long32 i)
 
 int repackint(sge_pack_buffer *pb, u_long32 i) 
 {
-   u_long32 J=0;
-
    DENTER(PACK_LAYER, "repackint");
 
-   if (!pb->just_count) {
-      J = htonl(i);
+   if (!pb->just_count)
+   {
+      u_long32 J = htonl(i);
       memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), INTSIZE);
       pb->cur_ptr = &(pb->cur_ptr[INTSIZE]);
    }
@@ -355,7 +353,8 @@ int repackint(sge_pack_buffer *pb, u_long32 i)
    PACK_ENOMEM
    PACK_FORMAT
  */
-int packdouble(sge_pack_buffer *pb, double d) {
+int packdouble(sge_pack_buffer *pb, double d)
+{
 /* CygWin does not know RPC u. XDR */
    char buf[32];
 #if !(defined(WIN32))                                         /* var not needed */
@@ -364,12 +363,16 @@ int packdouble(sge_pack_buffer *pb, double d) {
 
    DENTER(PACK_LAYER, "packdouble");
 
-   if (!pb->just_count) {
-      if (pb->bytes_used + DOUBLESIZE > pb->mem_size) {
+   if (!pb->just_count)
+   {
+      if (pb->bytes_used + DOUBLESIZE > pb->mem_size)
+      {
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+
          pb->mem_size += CHUNK;
          pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!pb->head_ptr) {
+         if (!pb->head_ptr)
+         {
             DEXIT;
             return PACK_ENOMEM;
          }
@@ -380,14 +383,16 @@ int packdouble(sge_pack_buffer *pb, double d) {
 #if !(defined(WIN32) || defined(INTERIX))                      /* XDR not called */
       xdrmem_create(&xdrs, (caddr_t)buf, sizeof(buf), XDR_ENCODE);
 
-      if (!(xdr_double(&xdrs, &d))) {
+      if (!(xdr_double(&xdrs, &d)))
+      {
          DPRINTF(("error - XDR of double failed\n"));
          xdr_destroy(&xdrs);
          DEXIT;
          return PACK_FORMAT;
       }
 
-      if (xdr_getpos(&xdrs) != DOUBLESIZE) {
+      if (xdr_getpos(&xdrs) != DOUBLESIZE)
+      {
          DPRINTF(("error - size of XDRed double is %d\n", xdr_getpos(&xdrs)));
          xdr_destroy(&xdrs);
          DEXIT;
@@ -397,14 +402,16 @@ int packdouble(sge_pack_buffer *pb, double d) {
 #if defined(INTERIX)
       wl_xdrmem_create(&xdrs, (caddr_t)buf, sizeof(buf), XDR_ENCODE);
 
-      if (!(wl_xdr_double(&xdrs, &d))) {
+      if (!(wl_xdr_double(&xdrs, &d)))
+      {
          DPRINTF(("error - XDR of double failed\n"));
          wl_xdr_destroy(&xdrs);
          DEXIT;
          return PACK_FORMAT;
       }
 
-      if (wl_xdr_getpos(&xdrs) != DOUBLESIZE) {
+      if (wl_xdr_getpos(&xdrs) != DOUBLESIZE)
+      {
          DPRINTF(("error - size of XDRed double is %d\n", wl_xdr_getpos(&xdrs)));
          wl_xdr_destroy(&xdrs);
          DEXIT;
@@ -442,16 +449,19 @@ int packstr(sge_pack_buffer *pb, const char *str)
    DENTER(PACK_LAYER, "packstr");
 
    /* determine string length */
-   if (str == NULL) {
-      if (!pb->just_count) {
+   if (str == NULL)
+   {
+      if (!pb->just_count)
+      {
          /* is realloc necessary */
-         if ((pb->bytes_used + 1) > pb->mem_size) {
-
-            /* realloc */
+         if ((pb->bytes_used + 1) > pb->mem_size)
+         {
             DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+
             pb->mem_size += CHUNK;
             pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
-            if (!pb->head_ptr) {
+            if (!pb->head_ptr)
+            {
                DEXIT;
                return PACK_ENOMEM;
             }
@@ -464,18 +474,25 @@ int packstr(sge_pack_buffer *pb, const char *str)
          pb->cur_ptr = &(pb->cur_ptr[1]);
       }
       pb->bytes_used++;
-   } else {
+   }
+   else
+   {
       size_t n = strlen(str) + 1;
 
-      if (!pb->just_count) {
+      if (!pb->just_count)
+      {
          /* is realloc necessary */
-         if ((pb->bytes_used + n) > pb->mem_size) {
-            /* realloc */
+         if ((pb->bytes_used + n) > pb->mem_size)
+         {
             DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+
             while ((pb->bytes_used + n) > pb->mem_size)
                pb->mem_size += CHUNK;
+
             pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
-            if (!pb->head_ptr) {
+
+            if (!pb->head_ptr)
+            {
                DEXIT;
                return PACK_ENOMEM;
             }
@@ -531,13 +548,14 @@ int packbitfield(sge_pack_buffer *pb, const bitfield *bitfield)
    size = sge_bitfield_get_size(bitfield);
    char_size = sge_bitfield_get_size_bytes(size);
 
-   if((ret = packint(pb, size)) != PACK_SUCCESS) {
+   if ((ret = packint(pb, size)) != PACK_SUCCESS)
+   {
       DEXIT;
       return ret;
    }
    
-   if((ret = packbuf(pb, sge_bitfield_get_buffer(bitfield),
-                     char_size)) != PACK_SUCCESS) {
+   if ((ret = packbuf(pb, sge_bitfield_get_buffer(bitfield), char_size)) != PACK_SUCCESS)
+   {
       DEXIT;
       return ret;
    }
@@ -554,27 +572,25 @@ int packbitfield(sge_pack_buffer *pb, const bitfield *bitfield)
    PACK_FORMAT
 
  */
-int packbuf(
-sge_pack_buffer *pb,
-const char *buf_ptr,
-u_long32 buf_size 
-) {
-
+int packbuf(sge_pack_buffer *pb, const char *buf_ptr, u_long32 buf_size)
+{
    DENTER(PACK_LAYER, "packbuf");
 
-   if (!pb->just_count) {
+   if (!pb->just_count)
+   {
       /* is realloc necessary */
 #if !(defined(WIN32)) /* cast */
-      if (buf_size + (u_long32) pb->bytes_used > (u_long32) pb->mem_size) {
+      if (buf_size + (u_long32) pb->bytes_used > (u_long32) pb->mem_size)
 #else
-      if (buf_size + pb->bytes_used > pb->mem_size) {
+      if (buf_size + pb->bytes_used > pb->mem_size)
 #endif /* WIN32 */
-
-         /* realloc */
+      {
          DPRINTF(("realloc(%d + %d)\n", pb->mem_size, CHUNK));
+
          pb->mem_size += CHUNK;
          pb->head_ptr = sge_realloc(pb->head_ptr, pb->mem_size, 0);
-         if (!(pb->head_ptr)) {
+         if (!(pb->head_ptr))
+         {
             DEXIT;
             return PACK_ENOMEM;
          }
@@ -614,7 +630,8 @@ int unpackint(sge_pack_buffer *pb, u_long32 *ip)
    DENTER(PACK_LAYER, "unpackint");
 
    /* are there enough bytes ? */
-   if (pb->bytes_used + INTSIZE > pb->mem_size) {
+   if (pb->bytes_used + INTSIZE > pb->mem_size)
+   {
       *ip = 0;
       DEXIT;
       return PACK_FORMAT;
@@ -652,7 +669,8 @@ int unpackdouble(sge_pack_buffer *pb, double *dp)
    DENTER(PACK_LAYER, "unpackdouble");
 
    /* are there enough bytes ? */
-   if (pb->bytes_used + DOUBLESIZE > pb->mem_size) {
+   if (pb->bytes_used + DOUBLESIZE > pb->mem_size)
+   {
       *dp = 0;
       DEXIT;
       return PACK_FORMAT;
@@ -664,7 +682,8 @@ int unpackdouble(sge_pack_buffer *pb, double *dp)
 #if !(defined(WIN32) || defined(INTERIX))                   /* XDR not called */
    memcpy(buf, pb->cur_ptr, DOUBLESIZE);
    xdrmem_create(&xdrs, buf, DOUBLESIZE, XDR_DECODE);
-   if (!(xdr_double(&xdrs, dp))) {
+   if (!(xdr_double(&xdrs, dp)))
+   {
       *dp = 0;
       DPRINTF(("error unpacking XDRed double\n"));
       xdr_destroy(&xdrs);
@@ -675,7 +694,8 @@ int unpackdouble(sge_pack_buffer *pb, double *dp)
 #if defined(INTERIX)
    memcpy(buf, pb->cur_ptr, DOUBLESIZE);
    wl_xdrmem_create(&xdrs, buf, DOUBLESIZE, XDR_DECODE);
-   if (!(wl_xdr_double(&xdrs, dp))) {
+   if (!(wl_xdr_double(&xdrs, dp)))
+   {
       *dp = 0;
       DPRINTF(("error unpacking XDRed double\n"));
       wl_xdr_destroy(&xdrs);
@@ -708,12 +728,11 @@ int unpackdouble(sge_pack_buffer *pb, double *dp)
  */
 int unpackstr(sge_pack_buffer *pb, char **str) 
 {
-   u_long32 n;
-
    DENTER(PACK_LAYER, "unpackstr");
 
    /* determine string length */
-   if (!pb->cur_ptr[0]) {
+   if (!pb->cur_ptr[0])
+   {
 
       *str = NULL;
 
@@ -722,15 +741,18 @@ int unpackstr(sge_pack_buffer *pb, char **str)
       pb->bytes_used++;
 
       /* are there enough bytes ? */
-      if (pb->bytes_used > pb->mem_size) {
+      if (pb->bytes_used > pb->mem_size)
+      {
          DEXIT;
          return PACK_FORMAT;
       }
 
       DEXIT;
       return PACK_SUCCESS;
-   } else {
-      n = strlen(pb->cur_ptr) + 1;
+   }
+   else
+   {
+      u_long32 n = strlen(pb->cur_ptr) + 1;
 
       /* are there enough bytes ? */
       if (n + pb->bytes_used > pb->mem_size) {
@@ -738,7 +760,8 @@ int unpackstr(sge_pack_buffer *pb, char **str)
          return PACK_FORMAT;
       }
       *str = strdup(pb->cur_ptr);
-      if (!*str) {
+      if (!*str)
+      {
          DEXIT;
          return PACK_ENOMEM;
       }
@@ -763,24 +786,29 @@ int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size)
 
    DENTER(PACK_LAYER, "unpackbuf");
 
-   if (buf_size == 0) {
+   if (buf_size == 0)
+   {
       DEXIT;
       return PACK_SUCCESS;
    }
 
    /* are there enough bytes ? */
-   if ((buf_size + pb->bytes_used) > pb->mem_size) {
+   if ((buf_size + pb->bytes_used) > pb->mem_size)
+   {
       DEXIT;
       return PACK_FORMAT;
    }
 
    /* copy buffer */
    *buf_ptr = malloc(buf_size);
-   if (!*buf_ptr) {
+   if (!*buf_ptr)
+   {
       DEXIT;
       return PACK_ENOMEM;
    }
+
    memcpy(*buf_ptr, pb->cur_ptr, buf_size);
+
    /* update cur_ptr & bytes_unpacked */
    pb->cur_ptr = &(pb->cur_ptr[buf_size]);
    pb->bytes_used += buf_size;
@@ -824,26 +852,30 @@ int unpackbitfield(sge_pack_buffer *pb, bitfield *bitfield, int descr_size)
    DENTER(PACK_LAYER, "unpackbitfield");
 
    /* create new bitfield */
-   if (!sge_bitfield_init(bitfield, descr_size)) {
+   if (!sge_bitfield_init(bitfield, descr_size))
+   {
       DEXIT;
       return PACK_ENOMEM;
    }
 
    /* unpack the size in bits */
-   if((ret = unpackint(pb, &size)) != PACK_SUCCESS) {
+   if ((ret = unpackint(pb, &size)) != PACK_SUCCESS)
+   {
       DEXIT;
       return ret;
    }
 
    /* size may not be bigger than bitfield initialized from descr information */
-   if (size > descr_size) {
+   if (size > descr_size)
+   {
       DEXIT;
       return PACK_ENOMEM;
    }
 
    /* unpack contents of the bitfield */
    char_size = sge_bitfield_get_size_bytes(size);
-   if((ret = unpackbuf(pb, &buffer, char_size)) != PACK_SUCCESS) {
+   if ((ret = unpackbuf(pb, &buffer, char_size)) != PACK_SUCCESS)
+   {
       sge_bitfield_free_data(bitfield);
       DEXIT;
       return ret;
@@ -860,7 +892,8 @@ int unpackbitfield(sge_pack_buffer *pb, bitfield *bitfield, int descr_size)
 
 const char *cull_pack_strerror(int errnum)
 {
-   switch(errnum) {
+   switch(errnum)
+   {
       case PACK_SUCCESS:
          return MSG_CULL_PACK_SUCCESS;
       case PACK_ENOMEM:
@@ -877,6 +910,7 @@ const char *cull_pack_strerror(int errnum)
    }
 }
 
+#if defined(CULL_DEBUG)
 /****** cull/pack/pb_are_equivalent() *****************************************
 *  NAME
 *     pb_are_equivalent() -- check if both buffers are equivalent 
@@ -901,7 +935,8 @@ pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2)
 {
    bool ret = true;
 
-   if (pb1 != NULL && pb2 != NULL) {
+   if (pb1 != NULL && pb2 != NULL)
+   {
       ret &= (pb1->bytes_used == pb2->bytes_used);
       ret &= (memcmp(pb1->head_ptr, pb2->head_ptr, pb1->bytes_used) == 0);
    }
@@ -926,8 +961,7 @@ pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2)
 *  RESULT
 *     void - NONE
 *******************************************************************************/
-void
-pb_print_to(sge_pack_buffer *pb, bool only_header, FILE* file)
+void pb_print_to(sge_pack_buffer *pb, bool only_header, FILE* file)
 {
    int i;
 
@@ -946,4 +980,4 @@ pb_print_to(sge_pack_buffer *pb, bool only_header, FILE* file)
       fprintf(file, "\n");
    }
 }
-
+#endif

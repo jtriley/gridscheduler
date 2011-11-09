@@ -668,6 +668,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 
 /*--------------------------------------------------------------------------*/
 #if defined(LINUX)
+
 #include <stdio.h>
 #include <string.h>
 
@@ -689,13 +690,15 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    FILE *fp;
    double buffers = 0, cached = 0;
 
-   if ((fp = fopen(PROC_MEMINFO, "r"))) {
-      while (fgets(buffer, sizeof(buffer)-1, fp)) {
+   if ( (fp = fopen(PROC_MEMINFO, "r")) )
+   {
+      while (fgets(buffer, sizeof(buffer)-1, fp))
+      {
 
 #define READ_VALUE(key, dest)    if (!strncmp(buffer, key, sizeof(key)-1)) { \
-            sscanf(buffer, "%[^0-9]%lf", dummy, &kbytes); \
-            dest = kbytes/1024; \
-            continue; \
+            sscanf(buffer, "%[^0-9]%lf", dummy, &kbytes);                    \
+            dest = kbytes/1024;                                              \
+            continue;                                                        \
          }
 
          READ_VALUE(KEY_MEMTOTAL,  mem_info->mem_total);
@@ -708,7 +711,9 @@ int sge_loadmem(sge_mem_info_t *mem_info)
       }
       FCLOSE(fp);
       mem_info->mem_free += buffers+cached;
-   } else {
+   }
+   else
+   {
       ret = 1;
    }
 
@@ -931,7 +936,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 }
 #endif /* NETBSD */
 
-#if defined(HAS_AIX5_PERFLIB)
+#if defined(HAS_AIX_PERFLIB)
 
 #include <libperfstat.h>
 
@@ -939,7 +944,8 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 {
  perfstat_memory_total_t minfo;
 
- perfstat_memory_total(NULL, &minfo, sizeof(perfstat_memory_total_t), 1);
+ if (perfstat_memory_total(NULL, &minfo, sizeof(perfstat_memory_total_t), 1) == -1)
+    return -1;
 
  mem_info->mem_total = (minfo.real_total*(4096/1024))/1024;
  mem_info->mem_free  = (minfo.real_free* (4096/1024))/1024;
@@ -950,5 +956,4 @@ int sge_loadmem(sge_mem_info_t *mem_info)
  return 0;
 }
 #endif
-
 

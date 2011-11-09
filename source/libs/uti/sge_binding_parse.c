@@ -42,6 +42,12 @@
 #include "sge_log.h"
 #include "uti/sge_binding_parse.h"
 
+#include "uti/sge_binding_hlp.h"
+#include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_binding_BN_L.h"
+#include "msg_common.h"
+
+
 binding_type_t binding_type_to_enum(const char* parameter)
 {
    binding_type_t type = BINDING_TYPE_NONE;
@@ -149,14 +155,15 @@ bool binding_explicit_extract_sockets_cores(const char* parameter,
       (*list_of_sockets)[0] = atoi(socket);
       (*list_of_cores)[0] = atoi(core);
 
-      while (do_endlessly) {
+      while (do_endlessly)
+      {
          /* get socket number */
-         if ((socket = sge_strtok(NULL, ",")) == NULL || (isdigit(*socket) == 0)) {
+         if ((socket = sge_strtok(NULL, ",")) == NULL || (isdigit(*socket) == 0))
             break;
-         }
 
          /* we have a socket therefore we need a core number */
-         if ((core = sge_strtok(NULL, ":")) == NULL || (isdigit(*core) == 0)) {
+         if ((core = sge_strtok(NULL, ":")) == NULL || (isdigit(*core) == 0))
+         {
             /* missing core number */
             FREE(*list_of_sockets);
             FREE(*list_of_cores);
@@ -169,12 +176,15 @@ bool binding_explicit_extract_sockets_cores(const char* parameter,
          (*list_of_cores) = realloc(*list_of_cores, (*camount)*sizeof(int));
          (*list_of_sockets)[*samount-1] = atoi(socket);
          (*list_of_cores)[*camount-1] = atoi(core);
-      }        /* we try to continue with the next socket if possible */
+      }
+               /* we try to continue with the next socket if possible */
                /* if "S" or "s" is found this is because the binding string 
                   in config file is parsed and the topology used by the job "SccScc" 
                   is followed */
 
-   } else {
+   }
+   else
+   {
       /* this should not be reachable because of the pre-check */
       return false;
    }
@@ -206,5 +216,55 @@ binding_printf_explicit_sockets_cores(dstring *string, int *socket_array, int so
    return ret;
 }
 
+#define BINDING_LAYER TOP_LAYER
 
+bool binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string)
+{
+   bool ret = true;
 
+   DENTER(BINDING_LAYER, "binding_parse_from_string");
+
+   if (this_elem != NULL && string != NULL)
+   {
+      int amount = 0, stepsize = 0, firstsocket = 0, firstcore = 0;
+      dstring socketcorelist = DSTRING_INIT, error = DSTRING_INIT;
+      binding_type_t type = BINDING_TYPE_NONE;
+      dstring strategy = DSTRING_INIT;
+
+      if (parse_binding_parameter_string(sge_dstring_get_string(string),
+               &type, &strategy, &amount, &stepsize, &firstsocket, &firstcore,
+               &socketcorelist, &error) != true)
+      {
+         dstring parse_binding_error = DSTRING_INIT;
+
+         sge_dstring_sprintf(&parse_binding_error, "-binding: ");
+         sge_dstring_append_dstring(&parse_binding_error, &error);
+
+         answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                 MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,
+                                 sge_dstring_get_string(&parse_binding_error));
+
+         sge_dstring_free(&parse_binding_error);
+         ret = false;
+      }
+      else
+      {
+         lSetString(this_elem, BN_strategy, sge_dstring_get_string(&strategy));
+
+         lSetUlong(this_elem, BN_type, type);
+         lSetUlong(this_elem, BN_parameter_socket_offset, (firstsocket >= 0) ? firstsocket : 0);
+         lSetUlong(this_elem, BN_parameter_core_offset, (firstcore >= 0) ? firstcore : 0);
+         lSetUlong(this_elem, BN_parameter_n, (amount >= 0) ? amount : 0);
+         lSetUlong(this_elem, BN_parameter_striding_step_size, (stepsize >= 0) ? stepsize : 0);
+
+         if (strstr(sge_dstring_get_string(&strategy), "explicit") != NULL)
+            lSetString(this_elem, BN_parameter_explicit, sge_dstring_get_string(&socketcorelist));
+      }
+
+      sge_dstring_free(&strategy);
+      sge_dstring_free(&socketcorelist);
+      sge_dstring_free(&error);
+   }
+
+   DRETURN(ret);
+}

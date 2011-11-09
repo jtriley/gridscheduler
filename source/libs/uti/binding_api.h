@@ -1,5 +1,5 @@
-#ifndef __SGE_BINDING_HLP_H
-#define __SGE_BINDING_HLP_H
+#ifndef __BINDING_API_H
+#define __BINDING_API_H
 
 /*___INFO__MARK_BEGIN__*/
 
@@ -38,28 +38,41 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_binding_parse.h"
 
-/* functions related for parsing command line (see parse_qsub.c) */
-/* shepherd also needs them */
-bool parse_binding_parameter_string(const char* parameter, binding_type_t* type, 
-      dstring* strategy, int* amount, int* stepsize, int* firstsocket, 
-      int* firstcore, dstring* socketcorelist, dstring* error);
+#if defined(PLPA)
+#  include "plpa.h"
+#  include <dlfcn.h>
+#endif 
 
-binding_type_t binding_parse_type(const char* parameter);
+#if defined(HWLOC)
+#  include <hwloc.h>
+#endif
 
-int binding_linear_parse_amount(const char* parameter);
-int binding_linear_parse_core_offset(const char* parameter);
-int binding_linear_parse_socket_offset(const char* parameter);
 
-int binding_striding_parse_amount(const char* parameter);
-int binding_striding_parse_first_core(const char* parameter);
-int binding_striding_parse_first_socket(const char* parameter);
-int binding_striding_parse_step_size(const char* parameter);
+int get_amount_of_sockets(void);
+int get_total_amount_of_cores(void);
 
-bool binding_explicit_has_correct_syntax(const char* parameter);
 
-const char* binding_get_topology_for_job(const char *binding_result);
+#if defined(THREADBINDING)
 
-bool topology_string_to_socket_core_lists(const char* topology, int** sockets,
-                                     int** cores, int* amount);
-#endif /* __SGE_BINDING_HLP_H */
+#if defined(PLPA)
+ typedef plpa_cpu_set_t sge_cpuset_t;
+ #define sge_cpuset_set_mask(mask, cpuid) PLPA_CPU_SET(mask, cpuid);
+#endif
 
+#if defined(HWLOC)
+ typedef hwloc_bitmap_t sge_cpuset_t;
+ #define sge_cpuset_set_mask(cpuid, mask) hwloc_bitmap_set(*mask, cpuid);
+
+ hwloc_topology_t hwloc_init(void);
+#endif
+
+char *topology_api_name(void);
+bool has_topology_information(void);
+bool get_topology(char** topology, int* length);
+bool get_processor_ids(int socket_number, int core_number, int **proc_ids, int *amount);
+int get_amount_of_cores(int socket_number);
+bool has_core_binding(void);
+
+#endif
+
+#endif /* __BINDING_API_H */

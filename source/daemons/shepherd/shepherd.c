@@ -866,10 +866,7 @@ int main(int argc, char **argv)
     *
     * With Solaris Proc Set, we switch to startuser
     */
-#if defined(PLPA_LINUX)
-   do_core_binding();
-#elif defined(SOLARIS86) || defined(SOLARISAMD64)
-   /*switch later to startuser */
+#if defined(THREADBINDING) || defined(SOLARISPSET)
    do_core_binding();
 #endif
 

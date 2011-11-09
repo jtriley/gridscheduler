@@ -72,6 +72,7 @@
 #include "gdi/sge_gdiP.h"
 
 #include "uti/sge_binding_hlp.h"
+#include "uti/binding_api.h"
 #include "sgeobj/sge_binding.h"
 
 #ifdef COMPILE_DC
@@ -557,14 +558,13 @@ lList *sge_build_load_report(const char* qualified_hostname, const char* binary_
 
 /****** load_avg/sge_get_sockets() *********************************************
 *  NAME
-*     sge_get_sockets() -- Appends the amount of sockets on a Linux platform 
+*     sge_get_sockets() -- Appends the amount of sockets
 *
 *  SYNOPSIS
 *     static int sge_get_sockets(const char* qualified_hostname, lList **lpp) 
 *
 *  FUNCTION
-*     Appends to the given list of load values the amount of sockets on 
-*     Linux platform only
+*     Appends to the given list of load values the amount of sockets.
 *
 *  INPUTS
 *     const char* qualified_hostname - Hostname 
@@ -586,7 +586,7 @@ static int sge_get_sockets(const char* qualified_hostname, lList **lpp) {
    DENTER(TOP_LAYER, "sge_get_sockets");
    
    /* get total amount of sockets installed on system */ 
-   sockets = get_execd_amount_of_sockets();
+   sockets = get_amount_of_sockets();
    
    /* append the amount of sockets to the load report list */
    sge_add_int2load_report(lpp, LOAD_ATTR_SOCKETS, sockets, qualified_hostname);
@@ -603,7 +603,7 @@ static int sge_get_sockets(const char* qualified_hostname, lList **lpp) {
 *
 *  FUNCTION
 *     Appends to the given list of load values the amount of cores 
-*     on current system (Linux platform only). For other OSs it is 0.
+*     on current system.
 *
 *  INPUTS
 *     const char* qualified_hostname - Hostname 
@@ -618,14 +618,15 @@ static int sge_get_sockets(const char* qualified_hostname, lList **lpp) {
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-static int sge_get_cores(const char* qualified_hostname, lList **lpp) {
+static int sge_get_cores(const char* qualified_hostname, lList **lpp)
+{
    
    int cores = 0;
    
    DENTER(TOP_LAYER, "sge_get_cores");
 
    /* get the total amount of cores */
-   cores = get_execd_amount_of_cores();
+   cores = get_total_amount_of_cores();
    
    /* append the amount of cores to the list */
    sge_add_int2load_report(lpp, LOAD_ATTR_CORES, cores, qualified_hostname);
@@ -900,14 +901,15 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
       /* sge_getcpuload() must be called multiple 
          before it can return correct load values */
       static int first_time = 1;
-      if (first_time) {
+      if (first_time)
+      {
          sge_getcpuload(&cpu_percentage);
          first_time = 0;
       }
 
-      if (sge_getcpuload(&cpu_percentage) != -1) {
+      if (sge_getcpuload(&cpu_percentage) != -1)
          sge_add_double2load_report(lpp, "cpu", cpu_percentage, qualified_hostname, NULL);
-      }
+
 #ifndef INTERIX
       else {
          static u_long32 next_log2 = 0;

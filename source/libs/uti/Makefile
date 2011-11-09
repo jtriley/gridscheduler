@@ -65,7 +65,7 @@ UTILIB_DRMAA_SRC = \
          sge_prog.c \
          sge_signal.c \
          sge_sl.c \
-	 		sge_smf.c \
+         sge_smf.c \
          sge_spool.c \
          sge_stdio.c \
          sge_stdlib.c \
@@ -77,7 +77,7 @@ UTILIB_DRMAA_SRC = \
          sge_uidgid.c \
          sge_unistd.c 
 
-UTILIB_SRC = sge_pty.c sge_loadmem.c sge_getloadavg.c sge_monitor.c $(UTILIB_DRMAA_SRC)
+UTILIB_SRC = sge_pty.c sge_loadmem.c sge_getloadavg.c binding_api.c sge_monitor.c $(UTILIB_DRMAA_SRC)
 
 UTILIB_DRMAA_OBJS = $(UTILIB_DRMAA_SRC:.c=.o)
 UTILIB_OBJS = $(UTILIB_SRC:.c=.o) 
@@ -90,9 +90,9 @@ UTILIB_TEST_OBJS = \
          test_sge_dstring.o \
          test_sge_uidgid.o \
          test_threads.o \
-			test_sge_sl.o \
-			test_sge_tq.o \
-			test_sge_err.o
+         test_sge_sl.o \
+         test_sge_tq.o \
+         test_sge_err.o
 
 UTILIB_TEST_PROGS = \
          test_sge_profiling \
@@ -100,9 +100,9 @@ UTILIB_TEST_PROGS = \
          test_sge_dstring \
          test_sge_uidgid \
          test_threads \
-			test_sge_sl \
-			test_sge_tq \
-			test_sge_err
+         test_sge_sl \
+         test_sge_tq \
+         test_sge_err
 
 ###############################################################################
 # global rules: all, clean, depend, messages
@@ -270,6 +270,11 @@ sge_binding_hlp.o:	$(UTILIB_DIR)/sge_binding_hlp.c
 
 sge_binding_parse.o:	$(UTILIB_DIR)/sge_binding_parse.c 
 		$(CC) $(CFLAGS) $(MEMCFLAG) $(SHARED_CFLAGS) -c $(UTILIB_DIR)/sge_binding_parse.c
+
+binding_api.o:  $(UTILIB_DIR)/binding_api.c
+		$(CC) $(CFLAGS) $(MEMCFLAG) $(SHARED_CFLAGS) -c $(UTILIB_DIR)/binding_api.c
+
+
 
 ###############################################################################
 # test targets

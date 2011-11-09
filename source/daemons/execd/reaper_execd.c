@@ -94,7 +94,7 @@
 #include "uti/sge_binding_hlp.h"
 #include "sgeobj/sge_binding.h"
 
-#if defined(SOLARISAMD64) || defined(SOLARIS86)
+#if defined(SOLARISPSET)
 #  include "uti/sge_uidgid.h"
 #  include <sys/processor.h>
 #  include <sys/types.h>
@@ -116,7 +116,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
 static void examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
 
-#if defined(PLPA_LINUX) || defined(SOLARISAMD64) || defined(SOLARIS86)
+#if defined(THREADBINDING) || defined(SOLARISPSET)
 static void update_used_cores(const char* path_to_config, lListElem** jr);
 #endif
 
@@ -1358,36 +1358,43 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
 
    DENTER(TOP_LAYER, "examine_job_task_from_file");
    
-   if (!startup_time) {
+   if (!startup_time)
+   {
       startup_time = sge_get_gmt();
    }   
 
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = lGetUlong(jatep, JAT_task_number);
-   if (petep != NULL) {
+
+   if (petep != NULL)
+   {
       pe_task_id_str = lGetString(petep, PET_id);
    }
 
-   if (SGE_STAT(dir, &statbuf)) {
+   if (SGE_STAT(dir, &statbuf))
+   {
       ERROR((SGE_EVENT, MSG_SHEPHERD_CANTSTATXY_SS, dir, strerror(errno)));
       DEXIT;
       return;
    }
 
-   if (!(statbuf.st_mode & S_IFDIR)) {
+   if (!(statbuf.st_mode & S_IFDIR))
+   {
       ERROR((SGE_EVENT, MSG_FILE_XISNOTADIRECTORY_S, dir));
       DEXIT;
       return;
    }
 
    DPRINTF(("Found job directory: %s\n", dir));
-   if (startup) {
+   if (startup)
+   {
       INFO((SGE_EVENT, MSG_SHEPHERD_FOUNDDIROFJOBX_S, dir));
    }   
    
    /* Look for pid of shepherd */
    sprintf(fname, "%s/pid", dir);
-   if (!(fp = fopen(fname, "r"))) {
+   if (!(fp = fopen(fname, "r")))
+   {
       /* Is it 
             1. a job started before startup of execd
                In this case the job was started by the old execd 
@@ -1396,7 +1403,8 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
             2. a newly started job
                In this case the shepherd had not enough time 
                to write the pid file -> No Logging */
-      if (startup && startup_time >= lGetUlong(jatep, JAT_start_time)) {
+      if (startup && startup_time >= lGetUlong(jatep, JAT_start_time))
+      {
          ERROR((SGE_EVENT, MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSUS,
                 fname, dir, sge_u32c(lGetUlong(jatep, JAT_start_time)), strerror(errno)));
          /* seek job report for this job - it must be contained in job report
@@ -1404,7 +1412,8 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
             in the interval between making the jobs active directory and writing
             the shepherds pid (done by the started shepherd). So we just remove
             and report this job. */
-         if (!(jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
+         if (!(jr=get_job_report(jobid, jataskid, pe_task_id_str)))
+         {
             CRITICAL((SGE_EVENT, MSG_SHEPHERD_MISSINGJOBXINJOBREPORTFOREXITINGJOB_U, sge_u32c(jobid)));
             jr = add_job_report(jobid, jataskid, pe_task_id_str, NULL);
          }
@@ -1431,52 +1440,65 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
    shepherd_alive = sge_contains_pid(pid, pids, npids);
 
    /* report this information */
-   if (shepherd_alive) {
+   if (shepherd_alive)
+   {
       sprintf(err_str, MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISZALIVE_SU, dir, sge_u32c(pid));
-   } else {
+   }
+   else
+   {
       sprintf(err_str, MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISNOTALIVE_SU, dir, sge_u32c(pid));
    }
-   if (startup) {
+ 
+   if (startup)
+   {
       INFO((SGE_EVENT, err_str));
       modify_queue_limits_flag_for_job(ctx->get_qualified_hostname(ctx), jep, true);
-   } else {
+   }
+   else
+   {
       DPRINTF((err_str));
    }
 
-   if (shepherd_alive) {     /* shepherd alive -> nothing to do */
-
-      if (startup) {
+   if (shepherd_alive)  /* shepherd alive -> nothing to do */
+   {
+      if (startup)
+      {
          /*  
             at startup we need to change the 
             state of not exited jobs from JWRITTEN 
             to JRUNNING
          */ 
-         if ((jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
+         if ((jr=get_job_report(jobid, jataskid, pe_task_id_str)))
+         {
 
             lSetUlong(jr, JR_state, JRUNNING);
             /* here we will call a ptf function to get */
             /* the first usage data after restart      */
 
-#if defined(PLPA_LINUX) || defined(SOLARISAMD64) || defined(SOLARIS86)
+#if defined(THREADBINDING) || defined(SOLARISPSET)
             {
                /* do accounting of bound cores */ 
                dstring fconfig = DSTRING_INIT;
 
                sge_get_active_job_file_path(&fconfig, jobid, jataskid, pe_task_id_str, "config");
                
-               if (sge_dstring_get_string(&fconfig) == NULL) {
+               if (sge_dstring_get_string(&fconfig) == NULL)
+               {
                   DPRINTF(("couldn't find config file for running job\n"));
-               } else {   
+               }
+               else
+               {   
                   DPRINTF(("path to config file %s\n", sge_dstring_get_string(&fconfig)));
                   update_used_cores(sge_dstring_get_string(&fconfig), &jr);
                }
-               
+
                sge_dstring_free(&fconfig);
-                  
-            }            
+            }
 #endif
 
-         } else {
+         }
+         else
+         {
             /* found job in active jobs directory 
                but not in spool directory of execd */
             ERROR((SGE_EVENT, MSG_SHEPHERD_INCONSISTENTDATAFORJOBX_U, sge_u32c(jobid)));
@@ -1512,30 +1534,24 @@ examine_job_task_from_file(sge_gdi_ctx_class_t *ctx, int startup, char *dir, lLi
    DRETURN_VOID;
 }
 
-#if defined(PLPA_LINUX) || defined(SOLARISAMD64) || defined(SOLARIS86)
+#if defined(THREADBINDING) || defined(SOLARISPSET)
 static void update_used_cores(const char* path_to_config, lListElem** jr)
 {
-   const char* binding_cfg;
-   
    DENTER(TOP_LAYER, "update_used_cores");
   
    DPRINTF(("update used cores: %s\n", path_to_config));
 
    if (!read_config(path_to_config))
    {
-      binding_cfg = get_conf_val("binding");
+      const char *binding_cfg = get_conf_val("binding");
 
-      if (binding_cfg == NULL)
+      if (binding_cfg != NULL)
       {
-         DPRINTF(("couldn't get binding element from config file!\n"));
-      }
-      else
-      {
-         DPRINTF(("BINDING bindingcfg %s\n", binding_cfg));
+         /* DPRINTF(("BINDING binding_cfg %s\n", binding_cfg)); */
 
          /* extract the job binding string and account it */
          const char* jobtopo = binding_get_topology_for_job(binding_cfg);
-         
+
          if (jobtopo != NULL)
          {
             /* usage in job report */
@@ -1551,11 +1567,19 @@ static void update_used_cores(const char* path_to_config, lListElem** jr)
             add_usage(*jr, sge_dstring_get_string(&pseudo_usage), NULL, 0);
             sge_dstring_free(&pseudo_usage); 
 
-         } else {
+         }
+         else
+         {
             DPRINTF(("topology not found\n"));
          }
-      } /* binding_cfg found */
-   } else {
+      }
+      else    /* binding_cfg found */
+      {
+         DPRINTF(("couldn't get binding element from config file!\n"));
+      }
+   }
+   else
+   {
       DPRINTF(("couldnt read config in\n"));
    }
 
@@ -2170,7 +2194,7 @@ static void clean_up_binding(char* binding)
       DRETURN_VOID;
    }
    
-#if defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(SOLARISPSET)
    if (strstr(binding, "psrset:") != NULL) {
       /* we are on Solaris and a processor set was created -> deaccount it and delete it */
       int processor_set_id = -1;
@@ -2237,19 +2261,22 @@ static void clean_up_binding(char* binding)
    }
 #endif
 
-#if defined(PLPA_LINUX)
+#if defined(THREADBINDING)
    /* on Linux the used topology can be found just after the last ":" */
    /* -> find the used topology and release it */
    
-   if (strstr(binding, ":") != NULL) {
+   if (strstr(binding, ":") != NULL)
+   {
       /* there was an order from execd to shepherd for binding */
       /* seach the string after the last ":" -> this 
          is the topology used by the job */
-      char* topo = NULL;   
+      char *topo;
       topo = strrchr(binding, ':');
       free_topology(++topo, -1);
       INFO((SGE_EVENT, "topology used by job freed"));
-   } else {
+   }
+   else
+   {
       /* couldn't find valid topology string in config file */
       WARNING((SGE_EVENT, "No resource string found in config entry binding"));
    }

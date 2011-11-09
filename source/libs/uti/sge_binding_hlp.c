@@ -37,22 +37,9 @@
 #include "sgermon.h"
 #include "sge_string.h"
 
-#include <pthread.h>
 #include "sge_mtutil.h"
 #include "sge_log.h"
 #include "uti/sge_binding_hlp.h"
-
-#if defined(SOLARISAMD64) || defined(SOLARIS86)
-#  include <sys/processor.h>
-#  include <sys/types.h>
-#  include <sys/pset.h>
-#endif 
-
-#if defined(PLPA_LINUX)
-/* module global variables */
-/* local handle for daemon in order to access PLPA library */
-#endif 
-
 
 /****** sge_binding_hlp/parse_binding_parameter_string() ***********************
 *  NAME
@@ -98,25 +85,27 @@ bool parse_binding_parameter_string(const char* parameter, binding_type_t* type,
 {
    bool retval = true;
 
-   if (parameter == NULL) {
+   if (parameter == NULL)
+   { 
       sge_dstring_sprintf(error, "input parameter was NULL");
       return false;
    }
    
    /* check the type [pe|env|set] (set is default) */
-   if (strstr(parameter, "pe ") != NULL) {
+   if (strstr(parameter, "pe ") != NULL)
       *type = BINDING_TYPE_PE;
-   } else if (strstr(parameter, "env ") != NULL) {
+   else if (strstr(parameter, "env ") != NULL)
       *type = BINDING_TYPE_ENV;
-   } else {
+   else
       *type = BINDING_TYPE_SET;   
-   }
 
-   if (strstr(parameter, "linear") != NULL) {
+   if (strstr(parameter, "linear") != NULL)
+   {
 
       *amount = binding_linear_parse_amount(parameter);
 
-      if (*amount  < 0) {
+      if (*amount  < 0)
+      {
          /* couldn't parse amount of cores */
          sge_dstring_sprintf(error, "couldn't parse amount (linear)");
          return false;
@@ -125,7 +114,8 @@ bool parse_binding_parameter_string(const char* parameter, binding_type_t* type,
       *firstsocket = binding_linear_parse_socket_offset(parameter);
       *firstcore   = binding_linear_parse_core_offset(parameter);
       
-      if (*firstsocket < 0 || *firstcore < 0) {
+      if (*firstsocket < 0 || *firstcore < 0)
+      {
          /* couldn't find start <socket,core> -> must be determined 
             automatically */
          sge_dstring_sprintf(strategy, "linear_automatic");
@@ -133,18 +123,23 @@ bool parse_binding_parameter_string(const char* parameter, binding_type_t* type,
          /* this might be an error on shepherd side only */
          *firstsocket = -1;
          *firstcore = -1;
-      } else {
+      }
+      else
+      {
          sge_dstring_sprintf(strategy, "linear");
       }
       
       /* set step size to dummy */ 
       *stepsize = -1;
       
-   } else if (strstr(parameter, "striding") != NULL) {
+   }
+   else if (strstr(parameter, "striding") != NULL)
+   {
       
       *amount = binding_striding_parse_amount(parameter);
       
-      if (*amount  < 0) {
+      if (*amount  < 0)
+      {
          /* couldn't parse amount of cores */
          sge_dstring_sprintf(error, "couldn't parse amount (striding)");
          return false;
@@ -152,7 +147,8 @@ bool parse_binding_parameter_string(const char* parameter, binding_type_t* type,
   
       *stepsize = binding_striding_parse_step_size(parameter);
 
-      if (*stepsize < 0) {
+      if (*stepsize < 0)
+      {
          sge_dstring_sprintf(error, "couldn't parse stepsize (striding)");
          return false;
       }
@@ -160,35 +156,48 @@ bool parse_binding_parameter_string(const char* parameter, binding_type_t* type,
       *firstsocket = binding_striding_parse_first_socket(parameter);
       *firstcore = binding_striding_parse_first_core(parameter);
    
-      if (*firstsocket < 0 || *firstcore < 0) {
+      if (*firstsocket < 0 || *firstcore < 0)
+      {
          sge_dstring_sprintf(strategy, "striding_automatic");   
 
          /* this might be an error on shepherd side only */
          *firstsocket = -1;
          *firstcore = -1;
-      } else {
+      }
+      else
+      {
          sge_dstring_sprintf(strategy, "striding");   
       }
 
-   } else if (strstr(parameter, "explicit") != NULL) {
+   }
+   else if (strstr(parameter, "explicit") != NULL)
+   {
 
-      if (binding_explicit_has_correct_syntax(parameter) == false) {
-         sge_dstring_sprintf(error, "couldn't parse <socket>,<core> list (explicit)");
-         retval = false;   
-      } else {
+      if (binding_explicit_has_correct_syntax(parameter))
+      {
          sge_dstring_sprintf(strategy, "explicit");
+
          /* explicit:<socket>,<core>:... */
-         if (socketcorelist == NULL) {
-            sge_dstring_sprintf(error, "BUG detected: DSTRING NOT INITIALIZED");
-            retval = false;  
-         } else {
-            char* pos = strstr(parameter, "explicit"); 
+         if (socketcorelist != NULL)
+         {
+            char* pos = strstr(parameter, "explicit");
             sge_dstring_copy_string(socketcorelist, pos);
             pos = NULL;
-         }   
-      }   
-      
-   } else {
+         }
+         else
+         {
+            sge_dstring_sprintf(error, "BUG detected: DSTRING NOT INITIALIZED");
+            retval = false;  
+         }
+      }
+      else
+      {
+         sge_dstring_sprintf(error, "couldn't parse <socket>,<core> list (explicit)");
+         retval = false;
+      }
+   }
+   else
+   {
       
       /* error: no valid strategy found */
       sge_dstring_sprintf(error, "couldn't parse binding parameter (no strategy found)"); 
@@ -197,449 +206,6 @@ bool parse_binding_parameter_string(const char* parameter, binding_type_t* type,
    
   return retval; 
 }
-
-#if defined(PLPA_LINUX)
-
-/****** sge_binding_hlp/has_topology_information() *********************************
-*  NAME
-*     has_topology_information() -- Checks if current arch offers topology. 
-*
-*  SYNOPSIS
-*     bool has_topology_information() 
-*
-*  FUNCTION
-*     Checks if current architecture (on which this function is called) 
-*     offers processor topology information or not.
-*
-*  RESULT
-*     bool - true if the arch offers topology information false if not 
-*
-*  NOTES
-*     MT-NOTE: has_topology_information() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-bool _has_topology_information() 
-{
-   dstring error = DSTRING_INIT;
-   sge_dstring_free(&error);
-
-   int has_topology = 0;
-   
-   if (plpa_have_topology_information(&has_topology) == 0 && has_topology == 1) {
-      return true;
-   }
-    
-   return false;
-}
-
-bool has_core_binding() 
-{
-   /* checks if plpa is working */
-   /* TODO do it only once? */
-
-   plpa_api_type_t api_type;
-
-   if (plpa_api_probe(&api_type) == 0 && api_type == PLPA_PROBE_OK) {
-      return true;
-   }
-   
-   return false;
-}
-
-
-
-/****** sge_binding_hlp/has_core_binding() *****************************************
-*  NAME
-*     has_core_binding() -- Check if core binding system call is supported. 
-*
-*  SYNOPSIS
-*     bool has_core_binding() 
-*
-*  FUNCTION
-*     Checks if core binding is supported on the machine or not. If it is 
-*     supported this does not mean that topology information (about socket 
-*     and core amount) is available (which is needed for internal functions 
-*     in order to perform a correct core binding).
-*     Nevertheless a bitmask could be generated and core binding could be 
-*     performed with this selfcreated bitmask.
-*
-*  RESULT
-*     bool - True if core binding could be done. False if not. 
-*
-*  NOTES
-*     MT-NOTE: has_core_binding() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-bool _has_core_binding(dstring* error) 
-{
-   
-   /* checks if plpa is working */
-   /* TODO do it only once? */
-   plpa_api_type_t api_type;
-
-   if (plpa_api_probe(&api_type) == 0 && api_type == PLPA_PROBE_OK) {
-      return true;
-   }
-
-   return false;
-}
-
-/****** sge_binding_hlp/get_total_amount_of_cores() ********************************
-*  NAME
-*     get_total_amount_of_cores() -- Fetches the total amount of cores on system. 
-*
-*  SYNOPSIS
-*     int get_total_amount_of_cores() 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*
-*  RESULT
-*     int - Total amount of cores installed on the system. 
-*
-*  EXAMPLE
-*     ??? 
-*
-*  NOTES
-*     MT-NOTE: get_total_amount_of_cores() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-int get_total_amount_of_cores() 
-{
-   /* total amount of cores currently active on this system */
-   int total_amount_of_cores = 0;
-   
-   if (has_core_binding() && _has_topology_information()) {
-      /* plpa_handle just for an early pre check */ 
-      int nr_socket = get_amount_of_sockets();
-      int cntr;
-      
-      /* get for each socket the amount of cores */
-      for (cntr = 0; cntr < nr_socket; cntr++) {
-         total_amount_of_cores += get_amount_of_cores(cntr);
-      }
-   }
-   
-   /* in case we got no information about topology we return 0 */
-   return total_amount_of_cores;
-}
-
-
-/****** sge_binding_hlp/get_amount_of_cores() **************************************
-*  NAME
-*     get_amount_of_cores() -- ??? 
-*
-*  SYNOPSIS
-*     int get_amount_of_cores(int socket_number) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     int socket_number - Physical socket number starting at 0. 
-*
-*  RESULT
-*     int - 
-*
-*  NOTES
-*     MT-NOTE: get_amount_of_cores() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-int get_amount_of_cores(int socket_number) 
-{
-
-   if (has_core_binding() && _has_topology_information()) {
-      int socket_id;
-      /* convert the reals socket number into the Linux socket_id */
-
-      if (plpa_get_socket_id(socket_number, &socket_id) == 0) {
-         int number_of_cores, max_core_id;
-         /* now retrieve the amount of core for this socket number */
-         if (plpa_get_core_info(socket_id, &number_of_cores, &max_core_id) == 0) {
-            /* return the amount of cores available */
-            return number_of_cores;
-         } else {
-            /* error when doing library call */
-            return 0;
-         }   
-
-      } else {
-         /* error: we didn't get the linux socket id */
-         return 0;
-      }
-   }
-
-   /* we have 0 cores in case something is wrong */
-   return 0;
-}
-
-/****** sge_binding_hlp/get_amount_of_sockets() ************************************
-*  NAME
-*     get_amount_of_sockets() -- Get the amount of available sockets.  
-*
-*  SYNOPSIS
-*     int get_amount_of_sockets() 
-*
-*  FUNCTION
-*     Returns the amount of sockets available on this system. 
-*
-*  RESULT
-*     int - The amount of available sockets on system. 0 in case of 
-*                  of an error.
-*
-*  NOTES
-*     MT-NOTE: get_amount_of_sockets() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-int get_amount_of_sockets() 
-{
-
-   if (has_core_binding() && _has_topology_information()) {
-      int num_sockets, max_socket_id;
-      
-      if (plpa_get_socket_info(&num_sockets, &max_socket_id) == 0) {
-         return num_sockets;
-      } else {
-         /* in case of an error we have 0 sockets */
-         return 0;
-      }
-   }
-
-   /* we have 0 cores in case something is wrong */
-   return 0;
-}
-
-/****** sge_binding_hlp/get_processor_ids_linux() ******************************
-*  NAME
-*     get_processor_ids_linux() -- Get internal processor ids for a specific core.
-*
-*  SYNOPSIS
-*     bool get_processor_ids_linux(int socket_number, int core_number, int** 
-*     proc_ids, int* amount) 
-*
-*  FUNCTION
-*     Get the Linux internal processor ids for a given core (specified by a socket, 
-*     core pair). 
-*
-*  INPUTS
-*     int socket_number - Logical socket number (starting at 0 without holes) 
-*     int core_number   - Logical core number on the socket (starting at 0 without holes) 
-*
-*  OUTPUTS
-*     int** proc_ids    - Array of Linux internal processor ids.
-*     int* amount       - Size of the proc_ids array.
-*
-*  RESULT
-*     bool - Returns true when processor ids where found otherwise false.
-*
-*  NOTES
-*     MT-NOTE: get_processor_ids_linux() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-bool get_processor_ids_linux(int socket_number, int core_number, int** proc_ids, int* amount)
-{
-   int retval = true;
-
-
-   if (proc_ids == NULL || (*proc_ids) != NULL || amount == NULL) {
-      retval = false;
-   } else if (has_core_binding() && _has_topology_information()) {
-
-      /* OS internal socket id and core id of 'socket_number' and 'core_number' */
-      int input_core_id   = -1;
-      int input_socket_id = -1;
-
-      /* tmp socket and core id of a processor id */
-      int core_id   = -1; 
-      int socket_id = -1;
-
-      /* the max. Linux processor ID */
-      int max_proc_id    = -1;
-      /* the number of processors    */
-      int num_processors = -1;
-
-      (*amount) = 0;
-
-      /* convert logical socket number into internal socket id */
-      if (retval && plpa_get_socket_id(socket_number, &input_socket_id) != 0) {
-         /* unable to retrieve Linux logical socket id */
-         retval = false;
-      }
-
-      /* convert logical core number into internal core id */
-      if (retval && plpa_get_core_id(input_socket_id, core_number, &input_core_id) != 0) {
-         /* unable to retrieve Linux logical core id  */
-         retval = false;
-      }
-
-      /* get the max. processor id */
-      if (retval && plpa_get_processor_data(PLPA_COUNT_ONLINE, &num_processors, 
-                                    &max_proc_id) == 0) {
-
-         /* a possible OS internal processor id */ 
-         int proc_cntr;
-
-         /* for all possible processor ids, check if they map to the 
-            socket and core id we are searching for */
-         for (proc_cntr = 0; proc_cntr <= max_proc_id; proc_cntr++) {
-
-            /* check if processor id is on socket, core */
-            if (plpa_map_to_socket_core(proc_cntr, &socket_id, &core_id) != 0) {
-               /* not a valid processor id */
-               continue;
-            }
-
-            if (socket_id == input_socket_id && core_id == input_core_id) {
-               /* this OS internal proc id (proc_cntr) points to a 
-                  socket, core we are searching for -> in case of hyperthreading 
-                  there can be more than one:
-                  -> add to the output array */
-               (*amount)++;   /* increment the output array size */
-               (*proc_ids) = (int *) realloc((*proc_ids), (*amount) * sizeof(int));
-
-               if (*proc_ids == NULL) {
-                  /* out of memory */
-                  retval = false;
-                  (*amount) = 0;
-                  break;
-               }   
-               /* store the processor id as last element in output array */
-               (*proc_ids)[(*amount)-1] = proc_cntr;
-            }
-
-         }
-         
-      }
-   }
-
-   if ((*amount) > 0) {
-      return true;
-   }
-
-   return false;
-}
-
-/****** sge_binding_hlp/get_topology_linux() ***********************************
-*  NAME
-*     get_topology_linux() -- Creates the topology string for the current host. 
-*
-*  SYNOPSIS
-*     bool get_topology_linux(char** topology, int* length) 
-*
-*  FUNCTION
-*     Creates the topology string for the current host. When it was created 
-*     it has top be freed from outside.
-*
-*  INPUTS
-*     char** topology - The topology string for the current host. 
-*     int* length     - The length of the topology string.  
-*
-*  RESULT
-*     bool - when true the topology string could be generated (and memory 
-*            is allocated otherwise false
-*
-*  NOTES
-*     MT-NOTE: get_topology_linux() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-bool get_topology_linux(char** topology, int* length)
-{
-   bool success = false;
-
-   /* initialize length of topology string */
-   (*length) = 0;
-
-   int has_topology = 0;
-
-   /* check if topology is supported via PLPA */
-   if (plpa_have_topology_information(&has_topology) == 0 && has_topology == 1) {
-      int num_sockets, max_socket_id;
-         
-      /* topology string */
-      dstring d_topology = DSTRING_INIT;
-
-      /* build the topology string */
-      if (plpa_get_socket_info(&num_sockets, &max_socket_id) == 0) {
-         int num_cores, max_core_id, ctr_cores, ctr_sockets, ctr_threads;
-         char* s = "S"; /* socket */
-         char* c = "C"; /* core   */
-         char* t = "T"; /* thread */
-
-         for (ctr_sockets = 0; ctr_sockets < num_sockets; ctr_sockets++) {
-            int socket_id; /* internal socket id */
-
-            /* append new socket */
-            sge_dstring_append_char(&d_topology, *s);
-            (*length)++;
-
-            /* for each socket get the number of cores */ 
-            if (plpa_get_socket_id(ctr_sockets, &socket_id) != 0) {
-               /* error while getting the internal socket id out of the logical */
-               continue;
-            } 
-
-            /* get information about this socket */
-            if (plpa_get_core_info(socket_id, &num_cores, &max_core_id) == 0) {
-               /* for thread counting */
-               int* proc_ids = NULL;
-               int amount_of_threads = 0;
-
-               /* check each core */
-               for (ctr_cores = 0; ctr_cores < num_cores; ctr_cores++) {
-                  sge_dstring_append_char(&d_topology, *c);
-                  (*length)++;
-                  /* check if the core has threads */
-                  if (get_processor_ids_linux(ctr_sockets, ctr_cores, &proc_ids, &amount_of_threads) 
-                        && amount_of_threads > 1) {
-                     /* print the threads */
-                     for (ctr_threads = 0; ctr_threads < amount_of_threads; ctr_threads++) { 
-                        sge_dstring_append_char(&d_topology, *t);
-                        (*length)++;
-                     }
-                  }
-                  FREE(proc_ids);
-               }
-            }
-         } /* for each socket */
-            
-         if ((*length) != 0) {
-            /* convert d_topolgy into topology */
-            (*length)++; /* we need `\0` at the end */
-            
-            /* copy element */ 
-            (*topology) = sge_strdup(NULL, sge_dstring_get_string(&d_topology));
-            success = true;      
-         }
-            
-         sge_dstring_free(&d_topology);
-      } 
-
-   } 
-
-   return success;
-}
-
-#endif 
-
-/* ---------------------------------------------------------------------------*/
-/*                Beginning of generic parsing functions                      */ 
-/* ---------------------------------------------------------------------------*/
 
 /****** sge_binding_hlp/binding_linear_parse_amount() ******************************
 *  NAME
@@ -673,13 +239,14 @@ int binding_linear_parse_amount(const char* parameter)
    /* expect string "linear" or "linear:<amount>" or linear 
       "linear:<amount>:<firstsocket>,<firstcore>" */
 
-   if (parameter != NULL && strstr(parameter, "linear") != NULL) {
+   if (parameter != NULL && strstr(parameter, "linear") != NULL)
+   {
       /* get number after linear: and before \0 or : */ 
-      if (sge_strtok(parameter, ":") != NULL) {
+      if (sge_strtok(parameter, ":") != NULL)
+      {
          char* n = sge_strtok(NULL, ":");
-         if (n != NULL) {
+         if (n != NULL)
             return atoi(n);
-         } 
       }   
    } 
 
@@ -1120,12 +687,12 @@ int binding_striding_parse_step_size(const char* parameter)
 *     
 *     It is assumed the 'binding_result' parameter that is
 *     passed to this function was previously returned by
-*     create_binding_strategy_string_linux()
+*     create_binding_strategy_string()
 *     create_binding_strategy_string_solaris()
 *
 *  INPUTS
 *     const char *binding_result - string returned by
-*                         create_binding_strategy_string_linux() 
+*                         create_binding_strategy_string() 
 *                         create_binding_strategy_string_solaris() 
 *
 *  RESULT
@@ -1203,8 +770,8 @@ topology_string_to_socket_core_lists(const char* topology, int** sockets,
             /* this core is in use hence we are collecting it */
             (*amount)++;
             current_core++;
-            *sockets = (int *) realloc(*sockets, (*amount) * sizeof(int));
-            *cores   = (int *) realloc(*cores, (*amount) * sizeof(int));
+            *sockets = realloc(*sockets, (*amount) * sizeof(int));
+            *cores   = realloc(*cores,   (*amount) * sizeof(int));
             (*sockets)[(*amount)-1] = current_socket;
             (*cores)[(*amount)-1]   = current_core;
          }
@@ -1216,5 +783,3 @@ topology_string_to_socket_core_lists(const char* topology, int** sockets,
 
    return retval;
 }
-
-

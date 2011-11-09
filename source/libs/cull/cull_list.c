@@ -1101,7 +1101,7 @@ lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem)
 ******************************************************************************/
 void lFreeElem(lListElem **ep1) 
 {
-   int i = 0;
+   int i;
    lListElem *ep = NULL;
    
    DENTER(CULL_LAYER, "lFreeElem");
@@ -2274,12 +2274,14 @@ int lPSortList(lList * lp, const char *fmt,...)
 
    DENTER(CULL_LAYER, "lPSortList");
 
-   va_start(ap, fmt);
-   if (!lp || !fmt) {
+   if (!lp || !fmt)
+   {
       LERROR(LELISTNULL);
-      va_end(ap);
       DRETURN(-1);
    }
+
+   va_start(ap, fmt);
+
    if (!(sp = lParseSortOrder(lp->descr, fmt, ap))) {
       LERROR(LEPARSESORTORD);
       va_end(ap);

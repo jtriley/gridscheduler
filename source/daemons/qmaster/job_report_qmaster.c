@@ -459,7 +459,7 @@ void process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
             } else {
                   /* This is a slave execd report while the job is running.
                    * When the master task has finished, the hosts gdil is tagged ==> we send a ACK_SIGNAL_SLAVE
-                   * When whe slave report contains JR_usage with exit_status, we are done, untag gdil, pack_job_exit
+                   * When the slave report contains JR_usage with exit_status, we are done, untag gdil, pack_job_exit
                    */
                   if (lGetUlong(first_at_host, JG_tag_slave_job) != 0) {
                      if (lGetElemStr(lGetList(jr, JR_usage), UA_name, "exit_status") != NULL) {

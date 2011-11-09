@@ -298,12 +298,15 @@ shepherd_write_shepherd_about_to_exit_file(void)
 {
    bool ret = true;
    const char *const filename = "shepherd_about_to_exit";
-   FILE *fd = NULL;
+   FILE *fp;
 
-   fd = fopen(filename, "w");
-   if (fd != NULL) {
-      FCLOSE(fd);
-   } else {
+   fp = fopen(filename, "w");
+   if (fp != NULL)
+   {
+      FCLOSE(fp);
+   }
+   else
+   {
       shepherd_error(1, MSG_FILE_NOOPEN_SS, filename, strerror(errno));
       ret = false;
    }

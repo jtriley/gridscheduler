@@ -41,9 +41,8 @@
  * to be too large because it does not parse quotations correctly. 
  * MT-NOTE: sge_quick_count_num_args() is MT safe
  */
-int sge_quick_count_num_args (
-const char* args /* The argument string to count by whitespace tokens */
-) {
+int sge_quick_count_num_args (const char* args) /* The argument string to count by whitespace tokens */
+{
    int num_args = 0;
    char *resreq = (char *)malloc (strlen (args)+1);
    char *s;
@@ -56,7 +55,8 @@ const char* args /* The argument string to count by whitespace tokens */
     * mallocing arrays, and a little too big is fine.
     */
    strcpy(resreq, args);
-   for (s = sge_strtok_r(resreq, " \t", &context); s != NULL; s = sge_strtok_r(NULL, " \t", &context)) {
+   for (s = sge_strtok_r(resreq, " \t", &context); s != NULL; s = sge_strtok_r(NULL, " \t", &context))
+   {
       num_args++;
    }
    free(resreq);

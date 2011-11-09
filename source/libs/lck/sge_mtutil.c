@@ -108,7 +108,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
       struct timeval now;
       gettimeofday(&now, NULL);
       printf("%ld got lock %lu:%lu %s\n", (long int) pthread_self(),now.tv_sec, now.tv_usec, mutex_name); 
-   }   
+   }
 #endif  
 
    DRETURN_VOID;

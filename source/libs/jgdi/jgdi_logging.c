@@ -375,20 +375,21 @@ void jgdi_log(JNIEnv *env, jobject logger, log_level_t level, const char* msg)
  *-------------------------------------------------------------------------*/
 void jgdi_log_printf(JNIEnv *env, const char* logger, log_level_t level, const char* fmt, ...)
 {
-   jobject logger_obj = NULL;
+   jobject logger_obj;
   
    logger_obj = jgdi_get_logger(env, logger);
-   if(logger_obj == NULL) {
+   if (logger_obj == NULL)
       return;
-   }
    
-   if (jgdi_is_loggable(env, logger_obj, level)) {
+   if (jgdi_is_loggable(env, logger_obj, level))
+   {
       dstring ds = DSTRING_INIT;
       va_list ap;
 
       va_start(ap, fmt);
-
       sge_dstring_vsprintf(&ds, fmt, ap);
+      va_end(ap);
+
       jgdi_log(env, logger_obj, FINE, sge_dstring_get_string(&ds));
       sge_dstring_free(&ds);
    }

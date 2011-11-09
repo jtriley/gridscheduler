@@ -100,6 +100,7 @@ int incompatibleType2(const char *fmt,...)
    DENTER(TOP_LAYER, "incompatibleType2");
    va_start(ap, fmt);
    vsprintf(buf, fmt, ap);
+   va_end(ap);
 
    CRITICAL((SGE_EVENT, buf));
    fprintf(stderr, buf);

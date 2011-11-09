@@ -77,9 +77,8 @@ void nm_set(int job_field[], int nm)
 
    /* seek it */
    for (i=0; job_field[i]!=NoName; i++)
-      if (job_field[i] == nm) {
+      if (job_field[i] == nm)
          DRETURN_VOID; /*found*/
-      }
 
    /* set it */
    DPRINTF(("%s\n", lNm2Str(nm)));
@@ -358,12 +357,15 @@ lEnumeration *lWhat(const char *fmt, ...)
    cull_parse_state state;
 
    DENTER(CULL_LAYER, "lWhat");
-   va_start(ap, fmt);
 
-   if (!fmt) {
+   if (!fmt)
+   {
       LERROR(LENOFORMATSTR);
       DRETURN(NULL);
    }
+
+   va_start(ap, fmt);
+
    /* 
       initialize scan function, the actual token is scanned again 
       in the subscope fuction. There we call eat_token to go ahead
@@ -374,7 +376,10 @@ lEnumeration *lWhat(const char *fmt, ...)
    /* parse */
    enumeration = subscope_lWhat(&state, &ap);
 
-   if (!enumeration) {
+   va_end(ap);
+
+   if (!enumeration)
+   {
       LERROR(LEPARSECOND);
       DRETURN(NULL);
    }

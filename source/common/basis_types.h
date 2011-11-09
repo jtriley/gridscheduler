@@ -188,7 +188,6 @@ typedef char stringT[MAX_STRING_SIZE];
 /* types */
 /* these are used for complexes */
 #define TYPE_INT          1
-#define TYPE_FIRST        TYPE_INT
 #define TYPE_STR          2
 #define TYPE_TIM          3
 #define TYPE_MEM          4
@@ -197,6 +196,8 @@ typedef char stringT[MAX_STRING_SIZE];
 #define TYPE_HOST         7
 #define TYPE_DOUBLE       8
 #define TYPE_RESTR        9
+
+#define TYPE_FIRST        TYPE_INT
 #define TYPE_CE_LAST      TYPE_RESTR
 
 /* used in config */

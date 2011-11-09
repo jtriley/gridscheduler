@@ -139,7 +139,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
 static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
                                      char *file_name)
 {
-   FILE *fd;
+   FILE *fp;
    char buf[10000];
    char err[BUFSIZ];
    char origin[SGE_PATH_MAX];
@@ -164,12 +164,12 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
       return 0;
    }    
 
-   if (!(fd=(fopen(file_name, "r")))) {
+   if (!(fp=(fopen(file_name, "r")))) {
       DEXIT;
       return -1;
    }
 
-   while (fgets(buf, sizeof(buf), fd)) {
+   while (fgets(buf, sizeof(buf), fp)) {
       char *crp;
 
       /* strip \n */
@@ -234,7 +234,7 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
 
    } /* while (fgets) */
 
-   FCLOSE(fd);
+   FCLOSE(fp);
 
    DEXIT;
    return ret;

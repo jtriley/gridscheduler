@@ -118,32 +118,27 @@ static void sge_stopwatch_stop(int i)
 ******************************************************************************/
 u_long32 sge_get_gmt()
 {
-#ifndef WIN32NATIVE
+#ifdef WIN32NATIVE
 
-   struct timeval now;
-
-#  ifdef SOLARIS
-   gettimeofday(&now, NULL);
-#  else
-#     ifdef SINIX
-   gettimeofday(&now);
-#     else
-   struct timezone tzp;
-   gettimeofday(&now, &tzp);
-#     endif
-#  endif
-
-   return (u_long32)now.tv_sec;
-#else
    time_t long_time;
    struct tm *gmtimeval;
 
-	time(&long_time);                  /* Get time as long integer. */
+   time(&long_time);                  /* Get time as long integer. */
 
    /* MT-NOTE: gmtime() is not MT safe (WIN32NATIVE) */
-	gmtimeval = gmtime(&long_time);    /* Convert to local time. */
-	long_time = mktime(gmtimeval);
-	return long_time;
+   gmtimeval = gmtime(&long_time);    /* Convert to local time. */
+   long_time = mktime(gmtimeval);
+
+   return long_time;
+
+#else
+
+   struct timeval now;
+
+   gettimeofday(&now, NULL);
+
+   return (u_long32)now.tv_sec;
+
 #endif
 }
 

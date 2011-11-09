@@ -442,12 +442,14 @@ lCondition *lWhere(const char *fmt,...)
    cull_parse_state state;
 
    DENTER(CULL_LAYER, "lWhere");
-   va_start(ap, fmt);
 
-   if (!fmt) {
+   if (!fmt)
+   {
       LERROR(LENOFORMATSTR);
       DRETURN(NULL);
    }
+
+   va_start(ap, fmt);
    /* 
       initialize scan function, the actual token is scanned again
       in the subscope fuction. There we call eat_token to go ahead
@@ -458,7 +460,10 @@ lCondition *lWhere(const char *fmt,...)
    /* parse */
    cond = subscope(&state, &ap);
 
-   if (!cond) {
+   va_end(ap);
+
+   if (!cond)
+   {
       LERROR(LEPARSECOND);
       DRETURN(NULL);
    }

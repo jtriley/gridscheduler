@@ -2848,7 +2848,8 @@ static const char* ILLEGAL_STATE_EXCEPTION = "java/lang/IllegalStateException";
 static const char* ILLEGAL_ARGUMENT_EXCEPTION = "java/lang/IllegalArgumentException";
 static const char* NULL_POINTER_EXCEPTION = "java/lang/NullPointerException";
 
-void throw_error(JNIEnv *env, jgdi_result_t result, const char* message, ...) {
+void throw_error(JNIEnv *env, jgdi_result_t result, const char* message, ...)
+{
    jclass new_exc_cls;
    va_list ap;
    char buf[BUFSIZ];
@@ -2860,7 +2861,8 @@ void throw_error(JNIEnv *env, jgdi_result_t result, const char* message, ...) {
    
    exc = (*env)->ExceptionOccurred(env);
    
-   if (exc) {
+   if (exc)
+   {
       dstring ds = DSTRING_INIT;
       (*env)->ExceptionClear(env);
       exc = (*env)->NewGlobalRef(env, exc);
@@ -2873,8 +2875,11 @@ void throw_error(JNIEnv *env, jgdi_result_t result, const char* message, ...) {
 
    va_start(ap, message);
    vsnprintf(buf, BUFSIZ-1, message, ap);
+   va_end(ap);
+
    clear_error(env);     
-   switch(result) {
+   switch(result)
+   {
       case JGDI_ERROR:
          exc_name = JGDI_EXCEPTION;
          break;

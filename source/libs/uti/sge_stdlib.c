@@ -219,19 +219,16 @@ int sge_putenv(const char *var)
 {
    char *duplicate;
 
-   if(var == NULL) {
+   if (var == NULL)
       return 0;
-   }
 
    duplicate = strdup(var);
 
-   if(duplicate == NULL) {
+   if (duplicate == NULL)
       return 0;
-   }
 
-   if(putenv(duplicate) != 0) {
+   if (putenv(duplicate) != 0)
       return 0;
-   }
 
    return 1;
 }
@@ -267,7 +264,8 @@ int sge_setenv(const char *name, const char *value)
 {
    int ret = 0;
 
-   if (name != NULL && value != NULL) {
+   if (name != NULL && value != NULL)
+   {
       dstring variable = DSTRING_INIT;
 
       sge_dstring_sprintf(&variable, "%s=%s", name, value);

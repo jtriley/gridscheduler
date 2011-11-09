@@ -441,35 +441,41 @@ cqueue_is_href_referenced(const lListElem *this_elem,
 *  RESULT
 *     bool - true if "hgroup" is referenced
 *******************************************************************************/
-bool 
-cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
+static bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
 {
    bool ret = false;
 
-   if (this_elem != NULL && hgroup != NULL) {
+   if (this_elem != NULL && hgroup != NULL)
+   {
       const char *name = lGetHost(hgroup, HGRP_name);
       
-      if (name != NULL) {
+      if (name != NULL)
+      {
          lList *href_list = lGetList(this_elem, CQ_hostlist);
          lListElem *tmp_href = lGetElemHost(href_list, HR_name, name);
 
          /*
           * Is the host group part of the hostlist definition ...
           */
-         if (tmp_href != NULL) {
+         if (tmp_href != NULL)
+         {
             ret = true;
-         } else {
+         }
+         else
+         {
             /*
              * ... or is it contained on one of the attribute lists
              */
             int index = 0;
-            while (cqueue_attribute_array[index].cqueue_attr != NoName) {
+            while (cqueue_attribute_array[index].cqueue_attr != NoName)
+            {
                lList *attr_list = lGetList(this_elem,
                                        cqueue_attribute_array[index].cqueue_attr);
                lListElem *attr_elem = lGetElemHost(attr_list,
                               cqueue_attribute_array[index].href_attr, name);
 
-               if (attr_elem != NULL) {
+               if (attr_elem != NULL)
+               {
                   ret = true;
                   break;
                }

@@ -6,6 +6,8 @@
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
 
+RH-2011-11-08-11: Enhancem.   - code cleanup (Part 3)
+
 RH-2011-11-08-10: Bugfix:     Issue 3239
 
 RH-2011-11-08-9: Enhancem.    Job exit status - $SGE_JOBEXIT_STAT

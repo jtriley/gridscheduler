@@ -82,13 +82,16 @@ static u_long32 sge_error_iterator_get_type(sge_error_iterator_class_t* emc);
 static bool sge_error_iterator_next(sge_error_iterator_class_t* thiz);
 
                                
-sge_error_class_t* sge_error_class_create(void) {
+sge_error_class_t* sge_error_class_create(void)
+{
    
    sge_error_class_t *ret = (sge_error_class_t*)sge_malloc(sizeof(sge_error_class_t));
-   if( ret == NULL ) {
+   if( ret == NULL )
+   {
       return NULL;
    }
-   memset(ret,0,sizeof(sge_error_class_t));
+
+   memset(ret, 0, sizeof(sge_error_class_t));
 
    ret->sge_error_handle = sge_malloc(sizeof(sge_error_t));
    memset(ret->sge_error_handle, 0, sizeof(sge_error_t));
@@ -122,24 +125,31 @@ void sge_error_class_destroy(sge_error_class_t **ec)
    FREE(*ec);
 }
 
-static void sge_error_class_clear(sge_error_class_t* thiz) {
-   if (thiz != NULL) {
+static void sge_error_class_clear(sge_error_class_t* thiz)
+{
+   if (thiz != NULL)
+   {
       sge_error_t *et = (sge_error_t*)thiz->sge_error_handle;
       sge_error_clear(et);
    }
 }
 
-static void sge_error_clear(sge_error_t *et) {
+static void sge_error_clear(sge_error_t *et)
+{
    DENTER(TOP_LAYER, "sge_error_clear");
    
-   if (et != NULL) {
+   if (et != NULL)
+   {
       sge_error_message_t *elem = et->first;
       sge_error_message_t *next;
-      while (elem != NULL) {
+
+      while (elem != NULL)
+      {
          next = elem->next;
          sge_error_message_destroy(&elem);
          elem = next;
       }
+
       et->first = NULL;
       et->last = NULL;
    }
@@ -148,8 +158,10 @@ static void sge_error_clear(sge_error_t *et) {
 }
 
 
-void sge_error_destroy(sge_error_t **t) {
-   if (t == NULL || *t == NULL) {
+void sge_error_destroy(sge_error_t **t)
+{
+   if (t == NULL || *t == NULL)
+   {
       return;
    }
 
@@ -158,28 +170,38 @@ void sge_error_destroy(sge_error_t **t) {
 }
 
 
-void sge_error_message_destroy(sge_error_message_t** elem) {
-   if (elem == NULL || *elem == NULL) {
+void sge_error_message_destroy(sge_error_message_t** elem)
+{
+   if (elem == NULL || *elem == NULL)
+   {
       return;
    }
+
    FREE((*elem)->message);
    FREE(*elem);
 }
 
-static bool sge_error_has_error(sge_error_class_t* eh) {   
+static bool sge_error_has_error(sge_error_class_t* eh)
+{
    sge_error_t *et = (sge_error_t*)eh->sge_error_handle;
    return (et->first != NULL) ? true : false;
 }
 
-static bool sge_error_has_quality(sge_error_class_t* thiz, int error_quality) {
+static bool sge_error_has_quality(sge_error_class_t* thiz, int error_quality)
+{
    bool ret = false;
    
    DENTER(TOP_LAYER, "sge_error_has_quality");
-   if(thiz) {
+
+   if (thiz)
+   {
       sge_error_t *et = (sge_error_t*)thiz->sge_error_handle;
       sge_error_message_t *elem = et->first;
-      while(elem) {
-         if(elem->error_quality == error_quality ) {
+
+      while (elem)
+      {
+         if (elem->error_quality == error_quality )
+         {
             ret = true;
             break;
          }
@@ -194,11 +216,16 @@ static bool sge_error_has_type(sge_error_class_t* thiz, int error_type)
    bool ret = false;
    
    DENTER(TOP_LAYER, "sge_error_has_type");
-   if(thiz) {
+
+   if (thiz)
+   {
       sge_error_t *et = (sge_error_t*)thiz->sge_error_handle;
       sge_error_message_t *elem = et->first;
-      while(elem) {
-         if(elem->error_type == error_type ) {
+
+      while (elem)
+      {
+         if (elem->error_type == error_type )
+         {
             ret = true;
             break;
          }
@@ -231,9 +258,8 @@ static sge_error_iterator_class_t* sge_error_iterator_class_create(sge_error_cla
    return ret;
 }
 
-static void sge_error_verror(sge_error_class_t* thiz, int error_type, int error_quality, 
-                            const char*format, va_list ap) {
-   
+static void sge_error_verror(sge_error_class_t* thiz, int error_type, int error_quality, const char*format, va_list ap)
+{
    sge_error_message_t *error = NULL;
    sge_error_t *et = (sge_error_t*)thiz->sge_error_handle;
    dstring ds = DSTRING_INIT;
@@ -253,10 +279,13 @@ static void sge_error_verror(sge_error_class_t* thiz, int error_type, int error_
    
    DPRINTF(("error: %s\n", error->message ? error->message : ""));
 
-   if (et->first == NULL) {
+   if (et->first == NULL)
+   {
       et->first = error;      
       et->last = error;
-   } else {
+   }
+   else
+   {
       et->last->next = error;
       et->last = error;
    }
@@ -266,15 +295,18 @@ static void sge_error_verror(sge_error_class_t* thiz, int error_type, int error_
 
 
 static void sge_error_error(sge_error_class_t* thiz, int error_type, int error_quality, 
-                            const char*format, ...) {
-   
-   va_list ap;
+                            const char*format, ...)
+{
    
    DENTER(TOP_LAYER, "sge_error_error");
 
-   if (format != NULL) {
+   if (format != NULL)
+   {
+      va_list ap;
+
       va_start(ap, format);
       sge_error_verror(thiz, error_type, error_quality, format, ap);
+      va_end(ap);
    }
 
    DEXIT;
@@ -285,7 +317,8 @@ void sge_error_iterator_class_destroy(sge_error_iterator_class_t** thiz)
 {
    sge_error_iterator_t *elem = NULL;
    
-   if (!thiz) {
+   if (!thiz)
+   {
       return;
    }
 
@@ -299,7 +332,8 @@ static const char* sge_error_iterator_get_message(sge_error_iterator_class_t* th
 {
    sge_error_iterator_t *elem = (sge_error_iterator_t*)thiz->sge_error_iterator_handle;
 
-   if (elem && elem->current) {
+   if (elem && elem->current)
+   {
       return elem->current->message;
    }
    return NULL;
@@ -309,7 +343,8 @@ static u_long32 sge_error_iterator_get_quality(sge_error_iterator_class_t* thiz)
 {
    sge_error_iterator_t *elem = (sge_error_iterator_t*)thiz->sge_error_iterator_handle;
 
-   if (elem && elem->current) {
+   if (elem && elem->current)
+   {
       return elem->current->error_quality;
    }
    return -1;
@@ -319,7 +354,8 @@ static u_long32 sge_error_iterator_get_type(sge_error_iterator_class_t* thiz)
 {
    sge_error_iterator_t *elem = (sge_error_iterator_t*)thiz->sge_error_iterator_handle;
 
-   if (elem && elem->current) {
+   if (elem && elem->current)
+   {
       return elem->current->error_type;
    }
    return -1;
@@ -329,14 +365,19 @@ static bool sge_error_iterator_next(sge_error_iterator_class_t* thiz)
 {
    sge_error_iterator_t *elem = (sge_error_iterator_t*)thiz->sge_error_iterator_handle;
 
-   if (!elem) {
+   if (!elem)
+   {
      return false;
    }
-   if (elem->is_first_flag ) {
+
+   if (elem->is_first_flag )
+   {
       elem->is_first_flag = false;
       return (elem->current != NULL) ? true : false;
    } 
-   if (elem->current) {
+
+   if (elem->current)
+   {
       elem->current = elem->current->next;
       
       return (elem->current != NULL) ? true : false;
@@ -345,59 +386,72 @@ static bool sge_error_iterator_next(sge_error_iterator_class_t* thiz)
 }
 
 
-void showError(sge_error_class_t *eh) {
+void showError(sge_error_class_t *eh)
+{
    sge_error_iterator_class_t *iter = NULL;
    dstring ds = DSTRING_INIT;
    bool first = true;
    
    iter = eh->iterator(eh);
 
-   while (iter && iter->next(iter)) {
-      if (first) {
+   while (iter && iter->next(iter))
+   {
+      if (first)
+      {
          first = true;
-      } else {   
+      }
+      else
+      {   
          sge_dstring_append(&ds, "\n");
       }   
       sge_dstring_append(&ds, iter->get_message(iter));
    }
+
    printf("%s\n", sge_dstring_get_string(&ds));
    sge_dstring_free(&ds);
 
 }
 
-void sge_error_to_answer_list(sge_error_class_t *eh, lList **alpp, bool clear_errors) {
+void sge_error_to_answer_list(sge_error_class_t *eh, lList **alpp, bool clear_errors)
+{
    sge_error_iterator_class_t *iter = NULL;
    
-   if (eh == NULL || alpp == NULL) {
+   if (eh == NULL || alpp == NULL)
+   {
       return;
    }
+
    iter = eh->iterator(eh);
-   while (iter && iter->next(iter)) {
-      answer_list_add(alpp, 
-                      iter->get_message(iter), 
-                      iter->get_type(iter), 
-                      (answer_quality_t)iter->get_quality(iter));
+   while (iter && iter->next(iter))
+   {
+      answer_list_add(alpp, iter->get_message(iter), iter->get_type(iter), (answer_quality_t)iter->get_quality(iter));
    }
-   if (clear_errors) {
+
+   if (clear_errors)
+   {
       sge_error_class_clear(eh);
    }
 
    sge_error_iterator_class_destroy(&iter);
 }
 
-void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds) {
+void sge_error_to_dstring(sge_error_class_t *eh, dstring *ds)
+{
    sge_error_iterator_class_t *iter = NULL;
    bool first = true;
    
    iter = eh->iterator(eh);
 
-   while (iter && iter->next(iter)) {
-      if (first) {
+   while (iter && iter->next(iter))
+   {
+      if (first)
+      {
          first = false;
-      } else {   
+      }
+      else
+      {   
          sge_dstring_append(ds, "\n");
       }   
       sge_dstring_append(ds, iter->get_message(iter));
    }
 }
-

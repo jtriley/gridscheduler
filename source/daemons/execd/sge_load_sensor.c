@@ -230,19 +230,17 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
    FILE *fp_out = NULL;
    FILE *fp_err = NULL;
    char buffer[1024];
-   char **envp = NULL;
+   char *envp[3];
 
    DENTER(TOP_LAYER, "sge_ls_start_ls");
 
    sprintf(buffer, "%s=%s", "HOST", qualified_hostname);
    if (has_to_use_qidle
        && !strcmp(lGetString(this_ls, LS_name), IDLE_LOADSENSOR_NAME)) {
-      envp = (char **) malloc(sizeof(char *) * 3);
       envp[0] = buffer;
       envp[1] = "XAUTHORITY=/tmp/.xauthority";
       envp[2] = NULL;
    } else {
-      envp = (char **) malloc(sizeof(char *) * 2);
       envp[0] = buffer;
       envp[1] = NULL;
    }
@@ -251,9 +249,6 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
    pid = sge_peopen("/bin/sh", 0, lGetString(this_ls, LS_command), NULL, envp,
                 &fp_in, &fp_out, &fp_err, true);
 
-   if (envp) {
-      free(envp);
-   }
    if (pid == -1) {
       return LS_CANT_PEOPEN;
    }

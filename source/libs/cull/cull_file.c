@@ -89,7 +89,8 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
 
    DENTER(TOP_LAYER, "lWriteElemToDisk");
 
-   if (!prefix && !name) {
+   if (!prefix && !name)
+   {
       ERROR((SGE_EVENT, MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK ));
       DEXIT;
       return 1;
@@ -99,11 +100,13 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
    ret = init_packbuffer(&pb, 8192, 0);
 
    /* pack ListElement */
-   if (ret == PACK_SUCCESS) {
+   if (ret == PACK_SUCCESS)
+   {
       ret = cull_pack_elem(&pb, ep);
    }
 
-   switch (ret) {
+   switch (ret)
+   {
    case PACK_SUCCESS:
       break;
 
@@ -130,18 +133,18 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
    }
 
    /* create full file name */
-   if (prefix && name) {
+   if (prefix && name)
       sprintf(filename, "%s/%s", prefix, name);
-   } else if (prefix) {
+   else if (prefix)
       sprintf(filename, "%s", prefix);
-   } else {
+   else
       sprintf(filename, "%s", name);
-   }
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
 
    /* open file */
-   if ((fd = SGE_OPEN3(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
+   if ((fd = SGE_OPEN3(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_CANTOPENXFORWRITINGOFYZ_SSS ,
                 filename, obj_name, strerror(errno)));
       clear_packbuffer(&pb);
@@ -150,7 +153,8 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
    }
 
    /* write packing buffer */
-   if (sge_writenbytes(fd, pb.head_ptr, pb_used(&pb)) != pb_used(&pb)) {
+   if (sge_writenbytes(fd, pb.head_ptr, pb_used(&pb)) != pb_used(&pb))
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_CANTWRITEXTOFILEY_SS , obj_name, 
                filename));
       clear_packbuffer(&pb);
@@ -192,20 +196,20 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
 *  RESULT
 *     lListElem* - Read CULL element
 *******************************************************************************/
-lListElem *lReadElemFromDisk(const char *prefix, const char *name, 
-                             const lDescr *type, const char *obj_name) 
+lListElem *lReadElemFromDisk(const char *prefix, const char *name, const lDescr *type, const char *obj_name)
 {
    stringT filename;
    sge_pack_buffer pb;
    SGE_STRUCT_STAT statbuf;
    lListElem *ep;
    int ret, fd;
-   void* buf;
+   void *buf;
    size_t size;
 
    DENTER(TOP_LAYER, "lReadElemFromDisk");
 
-   if (!prefix && !name) {
+   if (!prefix && !name)
+   {
       ERROR((SGE_EVENT,  MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK ));
       DEXIT;
       return NULL;
@@ -220,13 +224,15 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
       sprintf(filename, "%s", name);
 
    /* get file size */
-   if (SGE_STAT(filename, &statbuf) == -1) {
+   if (SGE_STAT(filename, &statbuf) == -1)
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_CANTGETFILESTATFORXFILEY_SS , obj_name, filename));
       DEXIT;
       return NULL;
    }
 
-   if (!statbuf.st_size) {
+   if (!statbuf.st_size)
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_XFILEYHASZEROSIYE_SS , obj_name, filename));
       DEXIT;
       return NULL;
@@ -234,38 +240,46 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
 
    /* init packing buffer */
    size = statbuf.st_size;
-   if (((SGE_OFF_T)size != statbuf.st_size)
-       || !(buf = malloc(statbuf.st_size))) {
+   if (((SGE_OFF_T)size != statbuf.st_size) || !(buf = malloc(statbuf.st_size)))
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_LEMALLOC));
-      clear_packbuffer(&pb);
       DEXIT;
       return NULL;
    }
 
    /* open file */
-   if ((fd = SGE_OPEN2(filename, O_RDONLY)) < 0) {
+   if ((fd = SGE_OPEN2(filename, O_RDONLY)) < 0)
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_CANTREADXFROMFILEY_SS , obj_name, filename));
-      clear_packbuffer(&pb);    /* this one frees buf */
+      FREE(buf);
       DEXIT;
       return NULL;
    }
 
    /* read packing buffer */
-   if (sge_readnbytes(fd, buf, statbuf.st_size) != statbuf.st_size) {
+   if (sge_readnbytes(fd, buf, statbuf.st_size) != statbuf.st_size)
+   {
       CRITICAL((SGE_EVENT, MSG_CULL_ERRORREADINGXINFILEY_SS , obj_name, filename));
       close(fd);
+      FREE(buf);
       DEXIT;
       return NULL;
    }
 
-   if((ret = init_packbuffer_from_buffer(&pb, buf, statbuf.st_size)) != PACK_SUCCESS) {
+   if ((ret = init_packbuffer_from_buffer(&pb, buf, statbuf.st_size)) != PACK_SUCCESS)
+   {
+      close(fd);
+      FREE(buf);
       ERROR((SGE_EVENT, MSG_CULL_ERRORININITPACKBUFFER_S, cull_pack_strerror(ret)));
+      return NULL;
    }
+
    ret = cull_unpack_elem(&pb, &ep, type);
    close(fd);
    clear_packbuffer(&pb);     /* this one frees buf */
 
-   switch (ret) {
+   switch (ret)
+   {
    case PACK_SUCCESS:
       break;
 

@@ -294,44 +294,47 @@ void shepherd_error_chown(const char* job_owner)
 *******************************************************************************/
 int shepherd_trace(const char *format, ...) 
 {
-   dstring     ds;
-   dstring     message = DSTRING_INIT;
-   va_list     ap;
-   char        buffer[128];
-   char        header_str[256];
-   int         ret=1;
-   int         old_cancelstate;
-	struct stat statbuf;
+   int ret = 1, old_cancelstate;
+   struct stat statbuf;
 
    /* Protect the trace file pointer with a mutex */
    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
    pthread_mutex_lock(&g_trace_mutex);
 
-	/* File was closed (e.g. by an exec()) but fp was not set to NULL */
-	if (shepherd_trace_fp 
-	    && fstat(fileno(shepherd_trace_fp), &statbuf) == -1
-		 && errno == EBADF) {
-		shepherd_trace_fp = NULL;
-	}
+   /* File was closed (e.g. by an exec()) but fp was not set to NULL */
+   if (shepherd_trace_fp && fstat(fileno(shepherd_trace_fp), &statbuf) == -1 && errno == EBADF)
+   {
+      shepherd_trace_fp = NULL;
+   }
 	
-	if (shepherd_trace_fp == NULL) {
-		shepherd_trace_fp = shepherd_trace_init_intern(st_trace);
-	}
+   if (shepherd_trace_fp == NULL)
+   {
+      shepherd_trace_fp = shepherd_trace_init_intern(st_trace);
+   }
 
-	if (shepherd_trace_fp != NULL) {
-   	sge_dstring_init(&ds, buffer, sizeof(buffer));
+   if (shepherd_trace_fp != NULL)
+   {
+      char buffer[128], header_str[256];
+      dstring ds, message = DSTRING_INIT;
 
-   	sprintf(header_str, "%s ["uid_t_fmt":"pid_t_fmt"]: ",
+      sge_dstring_init(&ds, buffer, sizeof(buffer));
+
+      sprintf(header_str, "%s ["uid_t_fmt":"pid_t_fmt"]: ",
 			sge_ctime(0, &ds), geteuid(), getpid());
      
-      if (format != NULL) {
+      if (format != NULL)
+      {
+         va_list     ap;
+
          va_start(ap, format);
          sge_dstring_vsprintf(&message, format, ap);
+         va_end(ap);
 
-   	   ret = sh_str2file(header_str, sge_dstring_get_string(&message), 
+         ret = sh_str2file(header_str, sge_dstring_get_string(&message), 
                            shepherd_trace_fp);
 
-         if (foreground) {
+         if (foreground)
+         {
             printf("%s%s\n", header_str, sge_dstring_get_string(&message));
             fflush(stdout);
          }
@@ -340,11 +343,13 @@ int shepherd_trace(const char *format, ...)
       /* There are cases where we have to open and close the files 
        * for every write.
        */
-      if (!g_keep_files_open) {
+      if (!g_keep_files_open)
+      {
          shepherd_trace_exit();
       }
-		ret=0;	
-	}
+
+      ret=0;	
+   }
 
    pthread_mutex_unlock(&g_trace_mutex);
    pthread_setcancelstate(old_cancelstate, NULL);
@@ -374,28 +379,34 @@ void shepherd_error(int do_exit, const char *format, ...)
 {
    dstring     ds;
    dstring     message = DSTRING_INIT;
-   va_list     ap;
    char        buffer[128];
    char        header_str[256];
-	struct stat statbuf;
+   struct stat statbuf;
 
-   if (format != NULL) {
+   if (format != NULL)
+   {
+      va_list     ap;
+
       va_start(ap, format);
       sge_dstring_vsprintf(&message, format, ap);
+      va_end(ap);
    }
 
    shepherd_trace(sge_dstring_get_string(&message));
 
-	/* File was closed (e.g. by an exec()) but fp was not set to NULL */
-	if (shepherd_error_fp 
-	    && fstat(fileno(shepherd_error_fp), &statbuf) == -1
-		 && errno==EBADF) {
-		shepherd_error_fp = NULL;
-	}
-	if (shepherd_error_fp == NULL) {
-		shepherd_error_fp = shepherd_trace_init_intern(st_error);
-	}
-	if (shepherd_error_fp != NULL) {
+   /* File was closed (e.g. by an exec()) but fp was not set to NULL */
+   if (shepherd_error_fp && fstat(fileno(shepherd_error_fp), &statbuf) == -1 && errno==EBADF)
+   {
+      shepherd_error_fp = NULL;
+   }
+
+   if (shepherd_error_fp == NULL)
+   {
+      shepherd_error_fp = shepherd_trace_init_intern(st_error);
+   }
+
+   if (shepherd_error_fp != NULL)
+   {
       sge_dstring_init(&ds, buffer, sizeof(buffer));
       sprintf(header_str, "%s ["uid_t_fmt":"pid_t_fmt"]: ",
               sge_ctime(0, &ds), geteuid(), getpid());
@@ -403,47 +414,56 @@ void shepherd_error(int do_exit, const char *format, ...)
       sh_str2file(header_str, sge_dstring_get_string(&message), shepherd_error_fp);
    }
 
-   if (foreground) {
+   if (foreground)
+   {
       fprintf(stderr, "%s%s\n", header_str, sge_dstring_get_string(&message));
    }
 
-	/* File was closed (e.g. by an exec()) but fp was not set to NULL */
-	if (shepherd_exit_status_fp 
-	    && fstat(fileno(shepherd_exit_status_fp), &statbuf) == -1
-	    && errno==EBADF ) {
-		shepherd_exit_status_fp = NULL;
-	}
-	if (shepherd_exit_status_fp == NULL) {
-		shepherd_exit_status_fp = shepherd_trace_init_intern(st_exit_status);
-	}
-	if (shepherd_exit_status_fp != NULL) {
+   /* File was closed (e.g. by an exec()) but fp was not set to NULL */
+   if (shepherd_exit_status_fp && fstat(fileno(shepherd_exit_status_fp), &statbuf) == -1 && errno==EBADF )
+   {
+      shepherd_exit_status_fp = NULL;
+   }
+
+   if (shepherd_exit_status_fp == NULL)
+   {
+      shepherd_exit_status_fp = shepherd_trace_init_intern(st_exit_status);
+   }
+
+   if (shepherd_exit_status_fp != NULL)
+   {
       sprintf(header_str, "%d", shepherd_state);
       sh_str2file(header_str, NULL, shepherd_exit_status_fp);
-	}
+   }
 	
-   if (coshepherd_pid > 0) {
+   if (coshepherd_pid > 0)
+   {
       sge_switch2start_user();
       kill(coshepherd_pid, SIGTERM);
       sge_switch2admin_user();
    }   
      
    if (g_new_interactive_job_support == false && 
-      search_conf_val("qrsh_control_port") != NULL) {
+      search_conf_val("qrsh_control_port") != NULL)
+   {
       char buffer[1024];
-      snprintf(buffer, 1024, "1:%s", sge_dstring_get_string(&message));
+      snprintf(buffer, sizeof(buffer), "1:%s", sge_dstring_get_string(&message));
       write_to_qrsh(buffer);  
    }
    sge_dstring_free(&message);
 
-   if (do_exit) {
-		/* close all trace files before exit */
-	   shepherd_trace_exit();
+   if (do_exit)
+   {
+      /* close all trace files before exit */
+      shepherd_trace_exit();
       exit(shepherd_state);
-	}
+   }
+
    /* There are cases where we have to open and close the files 
     * for every write.
     */
-   if (!g_keep_files_open) {
+   if (!g_keep_files_open)
+   {
       shepherd_error_exit();
    }
 }
@@ -570,14 +590,17 @@ int count_exit_status(void)
 {
    int n = 0;
    SGE_STRUCT_STAT sbuf;
-   char buf[1024];
 
-   if (!SGE_STAT("exit_status", &sbuf) && sbuf.st_size) {
+   if (!SGE_STAT("exit_status", &sbuf) && sbuf.st_size)
+   {
       FILE *fp;
-      int dummy;
 
-      if ((fp = fopen("exit_status", "r"))) {
-         while (fgets(buf, sizeof(buf), fp)) {
+      if ((fp = fopen("exit_status", "r")))
+      {
+         char buf[1024];
+         while (fgets(buf, sizeof(buf), fp))
+         {
+            int dummy;
             if (sscanf(buf, "%d\n", &dummy) == 1) {
                n++;
             }

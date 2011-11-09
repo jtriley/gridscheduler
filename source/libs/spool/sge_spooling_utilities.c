@@ -317,15 +317,19 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 spooling_field * 
 spool_free_spooling_fields(spooling_field *fields)
 {
-   if (fields != NULL) {
+   if (fields != NULL)
+   {
       int i;
-      for (i = 0; fields[i].nm >=0; i++) {
-         if (fields[i].sub_fields != NULL && fields[i].sub_fields != fields) {
+      for (i = 0; fields[i].nm >=0; i++)
+      {
+         if (fields[i].sub_fields != NULL && fields[i].sub_fields != fields)
+         {
             fields[i].sub_fields = spool_free_spooling_fields(fields[i].sub_fields);
          }
 
-         if (fields[i].name != NULL) {
-            FREE(fields[i].name);
+         if (fields[i].name != NULL)
+         {
+           FREE(fields[i].name);
          }
       }
       FREE(fields);

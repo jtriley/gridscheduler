@@ -90,15 +90,8 @@ AIX)
          ;;
       esac
       ;;
-   5)
-      case $osrelease in
-      1|2|3)
-         ARCH=aix51
-         ;;
-      *)
-         ARCH=UNSUPPORTED-aix-5-$osrelease
-         ;;
-      esac
+   *)
+      ARCH=aix
       ;;
    esac
    ;;
@@ -192,7 +185,7 @@ Linux)
       lxmachine=sparc
       ;;
    x86_64)
-      lxmachine=amd64
+      lxmachine=x64
       ;;
    ia64)
       lxmachine=ia64
@@ -215,54 +208,27 @@ Linux)
    s390x)
       lxmachine=s390x
       ;;
+   armv8*)
+      lxmachine=arm64
+      ;;
+   arm*)
+      lxmachine=arm
+      ;;
    *)
       unsupported="UNSUPPORTED-"
       lxmachine=$osmachine
    esac
 
    case $osrelease in
-   2.4.*)
-      lxrelease=24
-
-      # verify the GNU C lib version
-      # For an alternative means to determine GNU C lib version see
-      # http://www.gnu.org/software/libc/FAQ.html#s-4.9
-      case $lxmachine in
-      amd64)
-         libc_string=`strings /lib64/libc.so.6 | grep "GNU C Library"`
-         ;;
-      ia64)
-         libc_string=`strings /lib/libc.so.6.1 | grep "GNU C Library"`
-         ;;
-      *)
-         libc_string=`strings /lib/libc.so.6 | grep "GNU C Library"`
-         ;;
-      esac
-
-      # retrieving libc version failed
-      if [ $? -ne 0 ]; then
-         unsupported="UNSUPPORTED-"
-         lxrelease="24-GLIBC"
-      else
-         libc_version=`echo $libc_string | tr ' ,' '\n' | grep "2\." | cut -f 2 -d "."`
-         if [ $libc_version -lt 2 ]; then
-            unsupported="UNSUPPORTED-"
-            lxrelease=24-GLIBC-2.${libc_version}
-         else
-            if [ $libc_version -eq 2 ]; then
-               unsupported="u"
-            fi
-         fi
-      fi
-      ;;
-   2.6.*)
-      lxrelease=26
-      ;;
-   *)
+   1.*)
       unsupported="UNSUPPORTED-"
-      lxrelease=$osrelease
+      ;;
+   2.[0-3].*)
+      unsupported="UNSUPPORTED-"
+      ;;
    esac
-   ARCH=${unsupported}lx${lxrelease}-${lxmachine}
+
+   ARCH=${unsupported}linux-${lxmachine}
    ;;
 OSF1)
    case $osrelease in

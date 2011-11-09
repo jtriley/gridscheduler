@@ -197,27 +197,26 @@ ArchTable()
 {
    echo "Arch Name             Platform"
    echo "-------------------------------------------"
-   echo "aix51                 AIX 5.1"
+   echo "aix                   AIX"
    echo "aix43                 AIX 4.3"
    echo "hp10                  HP-UX 10.x"
    echo "hp11                  HP-UX 11.x"
    echo "hp11-64               HP-UX 11.x 64bit"
    echo "irix65                Irix 6.5"
-   echo "lx24-alpha            Alpha Linux v2.4 kernel"
-   echo "lx26-alpha            Alpha Linux v2.6 kernel"
-   echo "lx24-amd64            AMD Linux v2.4 kernel"
-   echo "lx26-amd64            AMD Linux v2.6 kernel"
-   echo "lx24-ia64             IA64 Linux v2.4 kernel"
-   echo "lx26-ia64             IA64 Linux v2.6 kernel"
-   echo "lx26-ppc              PPC Linux v2.6 kernel"
-   echo "lx24-sparc            SPARC Linux v2.4 kernel"
-   echo "lx26-sparc            SPARC Linux v2.6 kernel"
-   echo "lx24-sparc64          SPARC 64bit Linux v2.4 kernel"
-   echo "lx26-sparc64          SPARC 64bit Linux v2.6 kernel"
-   echo "lx24-x86              x86 Linux v2.4 kernel"
-   echo "lx26-x86              x86 Linux v2.6 kernel"
-   echo "ulx24-x86             x86 Linux v2.4 kernel, libc < 2.3"
-   echo "ulx24-amd64           AMD Linux v2.4 kernel, libc < 2.3"
+   echo "linux-alpha           Alpha Linux"
+   echo "linux-arm             ARM Linux"
+   echo "linux-arm64           ARM Linux 64-bit"
+   echo "linux-ia64            IA64 Linux"
+   echo "linux-mips            MIPS Linux"
+   echo "linux-mips64          MIPS Linux 64-bit"
+   echo "linux-ppc             PPC Linux"
+   echo "linux-ppc64           PPC Linux 64-bit" 
+   echo "linux-sparc           SPARC Linux"
+   echo "linux-sparc64         SPARC Linux 64-bit"
+   echo "linux-s390            S/390 Linux 31-bit"
+   echo "linux-s390x           S/390 Linux 64-bit"
+   echo "linux-x86             x86 Linux"
+   echo "linux-x64             x64 (AMD64/Intel64) Linux"
    echo "osf4                  OSF 4.x"
    echo "tru64                 TRU64 UNIX"
    echo "sol-x86               Solaris x86"
@@ -864,8 +863,8 @@ if [ $instcommon = true ]; then
       Execute rm -f $DEST_SGE_ROOT/util/sge_update.sh
 
       # Install arch.dist as arch for installation process
-      Execute rm -f $DEST_SGE_ROOT/util/arch
-      Execute mv $DEST_SGE_ROOT/util/arch.dist $DEST_SGE_ROOT/util/arch
+      # Execute rm -f $DEST_SGE_ROOT/util/arch
+      # Execute mv $DEST_SGE_ROOT/util/arch.dist $DEST_SGE_ROOT/util/arch
 
       Execute chmod 755 $DEST_SGE_ROOT/util/install_modules \
 			$DEST_SGE_ROOT/util/upgrade_modules \

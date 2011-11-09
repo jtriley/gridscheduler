@@ -51,7 +51,6 @@ SGEOBJLIB_SRC = \
          cull_parse_util.c \
          parse.c \
          sge_attr.c \
-         sge_binding.c \
          sge_calendar.c \
          sge_centry.c \
          sge_conf.c \
@@ -59,7 +58,7 @@ SGEOBJLIB_SRC = \
          sge_cqueue_verify.c \
          sge_ckpt.c \
          sge_cuser.c \
-			sge_cull_xml.c \
+         sge_cull_xml.c \
          sge_event.c \
          sge_host.c \
          sge_hgroup.c \
@@ -104,9 +103,13 @@ SGEOBJLIB_SRC = \
          sge_advance_reservation.c \
          sge_ack.c
 
+SGEOBJBINDING_SRC = sge_binding.c
+
 SGEOBJDLIB_OBJS = $(SGEOBJDLIB_SRC:.c=.o)
 
 SGEOBJLIB_OBJS = $(SGEOBJLIB_SRC:.c=.o)
+
+SGEOBJBINDING_OBJS = $(SGEOBJBINDING_SRC:.c=.o)
 
 SGEOBJLIB_TEST_PROGS = \
               test_sge_object \
@@ -130,7 +133,7 @@ SGEOBJLIB_TEST_PROGS_OBJS = \
 sgeobjlib: $(SGEOBJLIB) $(SGEOBJDLIB) $(SGEOBJLIB_TEST_PROGS)
 
 sgeobjlib_clean:
-		$(RM) $(SGEOBJLIB_OBJS) $(SGEOBJDLIB_OBJS) libsgeobj.a libsgeobj$(SHAREDEXT) \
+		$(RM) $(SGEOBJLIB_OBJS) $(SGEOBJBINDING_OBJS) $(SGEOBJDLIB_OBJS) libsgeobj.a libsgeobj$(SHAREDEXT) \
               libsgeobjd.a libsgeobjd$(SHAREDEXT) sge_sub_object.o sge_sub_object_cpp.o \
               sge_sub_object.c $(SGEOBJLIB_TEST_PROGS) $(SGEOBJLIB_TEST_PROGS_OBJS)
 
@@ -146,12 +149,12 @@ sgeobjlib_messages:
 ###############################################################################
 # rules to build library
 ###############################################################################
-libsgeobj.a:	$(SGEOBJLIB_OBJS) version.o
-	$(AR) $(ARFLAGS) libsgeobj.a $(SGEOBJLIB_OBJS) version.o
+libsgeobj.a:	$(SGEOBJLIB_OBJS) $(SGEOBJBINDING_OBJS) version.o
+	$(AR) $(ARFLAGS) libsgeobj.a $(SGEOBJLIB_OBJS) $(SGEOBJBINDING_OBJS) version.o
 	$(RANLIB) libsgeobj.a
 
-libsgeobj$(SHAREDEXT): $(SGEOBJLIB_OBJS) $(SGEOBJDLIB) $(COMMLIB) $(CULLLIB) $(UTILIB) $(RMONLIB) $(LCKLIB) 
-	$(SHAREDLD) $(SHARED_LFLAGS) -o libsgeobj$(SHAREDEXT) $(SGEOBJLIB_OBJS) -lsgeobjd -lcomm -lcommlists -lcull -luti -lrmon $(LCKLIB) $(LIBS) -lc
+libsgeobj$(SHAREDEXT): $(SGEOBJLIB_OBJS) $(SGEOBJBINDING_OBJS) $(SGEOBJDLIB) $(COMMLIB) $(CULLLIB) $(UTILIB) $(RMONLIB) $(LCKLIB) 
+	$(SHAREDLD) $(SHARED_LFLAGS) -o libsgeobj$(SHAREDEXT) $(SGEOBJLIB_OBJS) $(SGEOBJBINDING_OBJS) -lsgeobjd -lcomm -lcommlists -lcull -luti -lrmon $(LCKLIB) $(LIBS) -lc
 
 libsgeobjd.a:	$(SGEOBJDLIB_OBJS) version.o
 	$(AR) $(ARFLAGS) libsgeobjd.a $(SGEOBJDLIB_OBJS) version.o

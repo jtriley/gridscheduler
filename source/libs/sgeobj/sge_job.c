@@ -1612,8 +1612,7 @@ u_long32 job_get_biggest_enrolled_task_id(const lListElem *job)
 *
 *  SYNOPSIS
 *     int job_list_register_new_job(const lList *job_list, 
-*                                   u_long32 max_jobs,
-*                                   int force_registration)
+*                                   u_long32 max_jobs)
 *
 *  FUNCTION
 *     This function checks whether a new job would exceed the maximum
@@ -1627,7 +1626,6 @@ u_long32 job_get_biggest_enrolled_task_id(const lListElem *job)
 *  INPUTS
 *     const lListElem *job   - JB_Type element
 *     u_long32 max_jobs      - maximum number of allowed jobs per user
-*     int force_registration - force job registration
 *
 *  RESULT
 *     int - 1 => limit would be exceeded
@@ -1636,18 +1634,17 @@ u_long32 job_get_biggest_enrolled_task_id(const lListElem *job)
 *  SEE ALSO
 *     sgeobj/suser/suser_register_new_job()
 ******************************************************************************/
-int job_list_register_new_job(const lList *job_list, u_long32 max_jobs,
-                              int force_registration)
+int job_list_register_new_job(const lList *job_list, u_long32 max_jobs)
 {
    int ret = 1;
  
    DENTER(TOP_LAYER, "job_list_register_new_job");
-   if (max_jobs > 0 && !force_registration &&
-       max_jobs <= lGetNumberOfElem(job_list)) {
+
+   if (max_jobs > 0 && max_jobs <= lGetNumberOfElem(job_list))
       ret = 1;
-   } else {
+   else
       ret = 0;
-   }
+
    DRETURN(ret);
 }                
 

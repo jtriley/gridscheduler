@@ -255,7 +255,7 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * Following block should only be executed once, when the job has no job id.
     *
     * At first  we try to find a job id which is not yet used. AFTER that we need
-    * to set the submission time. Only this makes wure that forced separation 
+    * to set the submission time. Only this makes sure that forced separation 
     * in time is effective in case of job ID rollover.
     */
    /* ORDER IS IMPORTANT */
@@ -272,7 +272,8 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    /*      
     * with interactive jobs, JB_exec_file is not set
     */      
-   if (lGetString(jep, JB_script_file)) {
+   if (lGetString(jep, JB_script_file))
+   {
       dstring string = DSTRING_INIT;
       sge_dstring_sprintf(&string, "%s/%d", EXEC_DIR, (int)lGetUlong(jep, JB_job_number));
       lSetString(jep, JB_exec_file, sge_dstring_get_string(&string));
@@ -280,19 +281,25 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    }
 
    /* check max_jobs */
-   if (job_list_register_new_job(*object_base[SGE_TYPE_JOB].list, mconf_get_max_jobs(), 0)) {
+   if (job_list_register_new_job(*object_base[SGE_TYPE_JOB].list, mconf_get_max_jobs() ))
+   {
       INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERCLUSTER, sge_u32c(mconf_get_max_jobs())));
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_NOTOK_DOAGAIN);      
    }
 
-   if (lGetUlong(jep, JB_verify_suitable_queues) != JUST_VERIFY &&
-       lGetUlong(jep, JB_verify_suitable_queues) != POKE_VERIFY) {
-      if (suser_check_new_job(jep, mconf_get_max_u_jobs()) != 0) { 
-         INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERUSER_UU, sge_u32c(mconf_get_max_u_jobs()),
+   {
+      lUlong verify_suitable_queues = lGetUlong(jep, JB_verify_suitable_queues);
+
+      if (verify_suitable_queues != JUST_VERIFY && verify_suitable_queues != POKE_VERIFY)
+      {
+        if (suser_check_new_job(jep, mconf_get_max_u_jobs()) != 0)
+        { 
+           INFO((SGE_EVENT, MSG_JOB_ALLOWEDJOBSPERUSER_UU, sge_u32c(mconf_get_max_u_jobs()),
                                                          sge_u32c(suser_job_count(jep))));
-         answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_NOTOK_DOAGAIN);
+           answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
+           DRETURN(STATUS_NOTOK_DOAGAIN);
+        }
       }
    }
 
@@ -301,7 +308,8 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
       lList *xuser_lists = mconf_get_xuser_lists();
 
       if (!sge_has_access_(ruser, lGetString(jep, JB_group), /* read */
-            user_lists, xuser_lists, *object_base[SGE_TYPE_USERSET].list)) {
+                           user_lists, xuser_lists, *object_base[SGE_TYPE_USERSET].list))
+      {
          ERROR((SGE_EVENT, MSG_JOB_NOPERMS_SS, ruser, rhost));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          lFreeList(&user_lists);
@@ -326,36 +334,51 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
                                    false)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (compress_ressources(alpp, lGetList(jep, JB_hard_resource_list), SGE_OBJ_JOB)) {
+      if (compress_ressources(alpp, lGetList(jep, JB_hard_resource_list), SGE_OBJ_JOB))
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
 
       if (centry_list_fill_request(lGetList(jep, JB_soft_resource_list),
                                    alpp, master_centry_list, false, true,
-                                   false)) {
+                                   false))
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (compress_ressources(alpp, lGetList(jep, JB_soft_resource_list), SGE_OBJ_JOB)) {
+
+      if (compress_ressources(alpp, lGetList(jep, JB_soft_resource_list), SGE_OBJ_JOB))
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (deny_soft_consumables(alpp, lGetList(jep, JB_soft_resource_list), master_centry_list)) {
+
+      if (deny_soft_consumables(alpp, lGetList(jep, JB_soft_resource_list), master_centry_list))
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (!centry_list_is_correct(lGetList(jep, JB_hard_resource_list), alpp)) {
+
+      if (!centry_list_is_correct(lGetList(jep, JB_hard_resource_list), alpp))
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (!centry_list_is_correct(lGetList(jep, JB_soft_resource_list), alpp)) {
+
+      if (!centry_list_is_correct(lGetList(jep, JB_soft_resource_list), alpp))
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
    }
 
-   if (!qref_list_is_valid(lGetList(jep, JB_hard_queue_list), alpp)) {
+   if (!qref_list_is_valid(lGetList(jep, JB_hard_queue_list), alpp))
+   {
       DRETURN(STATUS_EUNKNOWN);
    }
-   if (!qref_list_is_valid(lGetList(jep, JB_soft_queue_list), alpp)) {
+
+   if (!qref_list_is_valid(lGetList(jep, JB_soft_queue_list), alpp))
+   {
       DRETURN(STATUS_EUNKNOWN);
    }
-   if (!qref_list_is_valid(lGetList(jep, JB_master_hard_queue_list), alpp)) {
+
+   if (!qref_list_is_valid(lGetList(jep, JB_master_hard_queue_list), alpp))
+   {
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -573,29 +596,34 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
          job_execution_time = lGetUlong(jep, JB_execution_time);
 
          /* execution before now is set to at least now */
-         if (job_execution_time < now_time) {
+         if (job_execution_time < now_time)
+         {
             job_execution_time = now_time;
          }
 
          /* to be sure the execution time is NOT before AR start time */
-         if (job_execution_time < ar_start_time) {
+         if (job_execution_time < ar_start_time)
+         {
             job_execution_time = ar_start_time;
          }
 
          /* hard_resources h_rt limit */
-         if (job_get_wallclock_limit(&job_duration, jep) == true) {
+         if (job_get_wallclock_limit(&job_duration, jep))
+         {
             DPRINTF(("job -ar "sge_u32", ar_start_time "sge_u32", ar_end_time "sge_u32
                      ", job_execution_time "sge_u32", job duration "sge_u32" \n",
                      sge_u32c(ar_id),sge_u32c( ar_start_time),sge_u32c(ar_end_time),
                      sge_u32c(job_execution_time),sge_u32c(job_duration)));
 
             /* fit the timeframe */
-            if (job_duration > (ar_end_time - ar_start_time)) {
+            if (job_duration > (ar_end_time - ar_start_time))
+            {
                ERROR((SGE_EVENT, MSG_JOB_HRTLIMITTOOLONG_U, sge_u32c(ar_id)));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_DENIED);
             }
-            if ((job_execution_time + job_duration) > ar_end_time) {
+            if ((job_execution_time + job_duration) > ar_end_time)
+            {
                ERROR((SGE_EVENT, MSG_JOB_HRTLIMITOVEREND_U, sge_u32c(ar_id)));
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_DENIED);
@@ -617,19 +645,22 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
     * only operators and managers are allowed to submit
     * jobs with higher priority than 0 (=BASE_PRIORITY)
     */
-   if (lGetUlong(jep, JB_priority) > BASE_PRIORITY && !manop_is_operator(ruser)) {
+   if (lGetUlong(jep, JB_priority) > BASE_PRIORITY && !manop_is_operator(ruser))
+   {
       ERROR((SGE_EVENT, MSG_JOB_NONADMINPRIO));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* checks on -hold_jid */
-   if (job_verify_predecessors(jep, alpp)) {
+   if (job_verify_predecessors(jep, alpp))
+   {
       DRETURN(STATUS_EUNKNOWN);
    }
 
    /* checks on -hold_jid_ad */
-   if (job_verify_predecessors_ad(jep, alpp)) {
+   if (job_verify_predecessors_ad(jep, alpp))
+   {
       DRETURN(STATUS_EUNKNOWN);
    }
 
@@ -639,10 +670,12 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
    ** Execute command to store the client's DCE or Kerberos credentials.
    ** This also creates a forwardable credential for the user.
    */
-   if (mconf_get_do_credentials()) {
+   if (mconf_get_do_credentials())
+   {
       const char *sge_root = ctx->get_sge_root(ctx);
 
-      if (store_sec_cred(sge_root, packet, jep, mconf_get_do_authentication(), alpp) != 0) {
+      if (store_sec_cred(sge_root, packet, jep, mconf_get_do_authentication(), alpp) != 0)
+      {
          DRETURN(STATUS_EUNKNOWN);
       }
    }
@@ -653,5 +686,4 @@ sge_job_verify_adjust(sge_gdi_ctx_class_t *ctx, lListElem *jep, lList **alpp,
 
    DRETURN(ret);
 }
-
 

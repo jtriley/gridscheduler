@@ -5,6 +5,10 @@
 ################################################################################
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+RH-2011-11-08-5: Enhancem.    - classic spooling cleanup
+                              - more code cleanup (Part 2)
+
 RH-2011-11-08-5: Enhancem.    - code cleanup (Part 1)
 
 RH-2011-11-08-4: Bugfix:      - new URL for XML Schema (Part 2)

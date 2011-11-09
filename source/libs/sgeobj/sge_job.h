@@ -42,7 +42,7 @@
 
 /* Job states moved in from def.h */
 #define JIDLE                                0x00000000
-/* #define JENABLED                             0x00000008 */
+/* #define JENABLED                          0x00000008 */
 #define JHELD                                0x00000010
 #define JMIGRATING                           0x00000020
 #define JQUEUED                              0x00000040
@@ -344,8 +344,7 @@ u_long32 job_get_biggest_unenrolled_task_id(const lListElem *job);
 
 u_long32 job_get_biggest_enrolled_task_id(const lListElem *job);
 
-int job_list_register_new_job(const lList *job_list, u_long32 max_jobs,
-                              int force_registration);   
+int job_list_register_new_job(const lList *job_list, u_long32 max_jobs);
 
 void jatask_list_print_to_string(const lList *task_list, dstring *range_string);
 

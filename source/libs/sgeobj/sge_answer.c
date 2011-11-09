@@ -460,17 +460,18 @@ answer_list_add_sprintf(lList **answer_list, u_long32 status,
    bool ret = false;
 
    DENTER(ANSWER_LAYER, "answer_list_add");
-   if (answer_list != NULL) {
+   if (answer_list != NULL)
+   {
       dstring buffer = DSTRING_INIT;
       const char *message;
       va_list ap;
 
       va_start(ap, fmt);
       message = sge_dstring_vsprintf(&buffer, fmt, ap);
+      va_end(ap);
 
-      if (message != NULL) {
+      if (message != NULL)
          ret = answer_list_add(answer_list, message, status, quality);
-      }
 
       sge_dstring_free(&buffer);
    }

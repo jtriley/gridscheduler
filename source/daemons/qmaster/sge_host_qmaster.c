@@ -484,7 +484,7 @@ int sub_command, monitoring_t *monitor
          /* check xacl list */
          if (userset_list_validate_acl_list(lGetList(ep, EH_xacl), alpp) != STATUS_OK) {
             goto ERROR;
-         }   
+         }
          attr_mod_sub_list(alpp, new_host, EH_xacl, US_name, ep,
                            sub_command, SGE_ATTR_XUSER_LISTS, 
                            SGE_OBJ_EXECHOST, 0);
@@ -629,13 +629,13 @@ int host_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem *old_ep, gdi
          } else {
             const lListElem *global_ep = NULL;
 
-            global_ep = lGetElemHost(*object_type_get_master_list(SGE_TYPE_EXECHOST), EH_name, 
+            global_ep = lGetElemHost(*object_type_get_master_list(SGE_TYPE_EXECHOST), EH_name,
                                      SGE_GLOBAL_NAME);
             host_merge(ep, global_ep);
          }
 
          host_update_categories(ep, old_ep);
-         sge_add_event( 0, old_ep?sgeE_EXECHOST_MOD:sgeE_EXECHOST_ADD, 
+         sge_add_event( 0, old_ep?sgeE_EXECHOST_MOD:sgeE_EXECHOST_ADD,
                        0, 0, host, NULL, NULL, ep);
          lListElem_clear_changed_info(ep);
       }
@@ -788,7 +788,7 @@ void sge_update_load_values(sge_gdi_ctx_class_t *ctx, const char *rhost, lList *
             lep = lAddSubStr(*hepp, HL_name, name, EH_load_list, HL_Type);
             DPRINTF(("%s: adding load value: "SFQ" = "SFQ"\n", 
                   host, name, value));
-         } 
+         }
 
          /* copy value */
          lSetString(lep, HL_value, value); 
@@ -955,7 +955,7 @@ static void sge_change_queue_version_exechost(sge_gdi_ctx_class_t *ctx, const ch
       if (change_all) {
          next_qinstance = lFirst(qinstance_list);
       } else {
-         next_qinstance = lGetElemHostFirst(qinstance_list, QU_qhostname, 
+         next_qinstance = lGetElemHostFirst(qinstance_list, QU_qhostname,
                                             exechost_name, &iterator);
       }
       while ((qinstance = next_qinstance)) {
@@ -966,15 +966,15 @@ static void sge_change_queue_version_exechost(sge_gdi_ctx_class_t *ctx, const ch
             next_qinstance = lNext(qinstance);
             name = SGE_GLOBAL_NAME;
          } else {
-            next_qinstance = lGetElemHostNext(qinstance_list, QU_qhostname, 
-                                              exechost_name, &iterator); 
+            next_qinstance = lGetElemHostNext(qinstance_list, QU_qhostname,
+                                              exechost_name, &iterator);
             name = exechost_name;
          }
          DPRINTF((SFQ" has changed. Increasing qversion of"SFQ"\n",
                   name, lGetString(qinstance, QU_full_name)));
          qinstance_increase_qversion(qinstance);
-         sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD, 
-                         0, 0, lGetString(qinstance, QU_qname), 
+         sge_event_spool(ctx, &answer_list, 0, sgeE_QINSTANCE_MOD,
+                         0, 0, lGetString(qinstance, QU_qname),
                          lGetHost(qinstance, QU_qhostname), NULL,
                          qinstance, NULL, NULL, true, false);
          answer_list_output(&answer_list);

@@ -51,10 +51,6 @@
 #define MAX_JA_TASKS_PER_DIR  (4096l)
 #define MAX_JA_TASKS_PER_FILE (1l)  
 
-static int silent_flag = 0;
-
-static washing_machine_t wtype;
-
 static const char *spoolmsg_message[] = {
    "",
    "DO NOT MODIFY THIS FILE MANUALLY!",
@@ -664,7 +660,9 @@ FCLOSE_ERROR:
    return 0;
 } /* sge_get_confval_array() */
 
+#if defined(CLASSIC_DEBUG)
 
+static washing_machine_t wtype;
 
 /****** uti/spool/sge_status_set_type() ***************************************
 *  NAME
@@ -690,7 +688,7 @@ FCLOSE_ERROR:
 void sge_status_set_type(washing_machine_t type)
 {
    wtype = type;
-}              
+}
 
 /****** uti/spool/sge_status_next_turn() **************************************
 *  NAME
@@ -710,35 +708,35 @@ void sge_status_next_turn(void)
    static int cnt = 0;
    static const char s[] = "-\\/";
    static const char *sp = NULL;
- 
+
    cnt++;
    if ((cnt % 100) != 1) {
       return;
    }
- 
+
    switch (wtype) {
    case STATUS_ROTATING_BAR:
       {
- 
-         if (!sge_silent_get()) {
-            if (!sp || !*sp) {
+         if (!sp || !*sp)
+         {
                sp = s;
-            }
-            printf("%c\b", *sp++);
-            fflush(stdout);
          }
+         printf("%c\b", *sp++);
+         fflush(stdout);
       }
       break;
+
    case STATUS_DOTS:
-      if (!sge_silent_get()) {
+      {
          printf(".");
          fflush(stdout);
       }
       break;
+
    default:
       break;
    }
-}                                                                               
+}
 
 /****** uti/spool/sge_status_end_turn() ***************************************
 *  NAME
@@ -757,71 +755,25 @@ void sge_status_end_turn(void)
 {
    switch (wtype) {
    case STATUS_ROTATING_BAR:
-      if (!sge_silent_get()) {
+      {
          printf(" \b");
          fflush(stdout);
       }
       break;
+
    case STATUS_DOTS:
-      if (!sge_silent_get()) {
+      {
          printf("\n");
          fflush(stdout);
       }
       break;
+
    default:
       break;
    }
-}  
-
-/****** uti/spool/sge_silent_set() ********************************************
-*  NAME
-*     sge_silent_set() -- Enable/disable silence during spool ops 
-*
-*  SYNOPSIS
-*     void sge_silent_set(int i) 
-*
-*  FUNCTION
-*     Enable/disable silence during spool operations. Silence means
-*     that no messages are printed to stdout. 
-*
-*  INPUTS
-*     int i - 0 or 1 
-*
-*  SEE ALSO
-*     uti/spool/sge_silent_get() 
-*
-*  NOTES
-*     MT-NOTE: sge_silent_set() is not MT safe
-******************************************************************************/
-void sge_silent_set(int i) 
-{
-   silent_flag = i;
-   return;
 }
- 
-/****** uti/spool/sge_silent_get() ********************************************
-*  NAME
-*     sge_silent_get() -- Show whether silence is enable/disabled 
-*
-*  SYNOPSIS
-*     int sge_silent_get() 
-*
-*  FUNCTION
-*     Show whether silence is enable/disabled 
-*
-*  RESULT
-*     int - 0 or 1
-*
-*  SEE ALSO
-*     uti/spool/sge_silent_set() 
-*
-*  NOTES
-*     MT-NOTE: sge_silent_get() is not MT safe
-******************************************************************************/
-int sge_silent_get()
-{
-   return silent_flag;
-} 
+
+#endif
 
 /****** uti/spool/sge_get_management_entry() *************************************
 *  NAME

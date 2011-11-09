@@ -196,10 +196,19 @@ typedef enum {
    FORMAT_THIRD_PART   = 0x0008
 } sge_file_path_format_t;
 
+#if defined(CLASSIC_DEBUG)
+void sge_status_set_type(washing_machine_t type);
+
+void sge_status_next_turn(void);
+
+void sge_status_end_turn(void);
+
 typedef enum {
    STATUS_ROTATING_BAR,
    STATUS_DOTS
 } washing_machine_t; 
+
+#endif
 
 typedef struct {
    const char *name;
@@ -238,16 +247,6 @@ int sge_get_confval_array(const char *fname,
 pid_t sge_readpid(const char *fname);
  
 void sge_write_pid(const char *pid_log_file);
-
-void sge_status_set_type(washing_machine_t type);
-
-void sge_status_next_turn(void);
-
-void sge_status_end_turn(void);
-
-void sge_silent_set(int i);
-
-int sge_silent_get(void); 
 
 int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                           char value[][SGE_PATH_MAX], dstring *error_dstring);

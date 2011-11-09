@@ -54,9 +54,6 @@
 #   define RLIMIT_INFINITY RLIM_INFINITY
 #endif
 
-/* Format the value, if val == INFINITY, print INFINITY for logs sake */
-#define FORMAT_LIMIT(x) (x==RLIMIT_INFINITY)?0:x, (x==RLIMIT_INFINITY)?"\bINFINITY":""
-
 #if defined(DARWIN)
 #   include <sys/time.h>
 #   include <sys/types.h>
@@ -521,7 +518,7 @@ void setrlimits(int trace_rlimit) {
                                                  NECSX 4/5
                                                  |         OTHER ARCHS
                                                  |         |          */
-const struct resource_table_entry resource_table[] = {
+static const struct resource_table_entry resource_table[] = {
    {RLIMIT_FSIZE,     "RLIMIT_FSIZE",            {RES_PROC, RES_PROC}},
    {RLIMIT_DATA,      "RLIMIT_DATA",             {RES_PROC, RES_PROC}},
    {RLIMIT_STACK,     "RLIMIT_STACK",            {RES_PROC, RES_PROC}},
@@ -635,6 +632,8 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
       if (rlp->rlim_max < rlp->rlim_cur)
          rlp->rlim_cur = rlp->rlim_max;
 
+#define FORMAT_LIMIT(x) x, (x==RLIMIT_INFINITY)? "(INFINITY)" : ""
+
 #if defined(NECSX4) || defined(NECSX5) || defined(NETBSD_ALPHA) || defined(NETBSD_X86_64) || defined(NETBSD_SPARC64)
 #  define limit_fmt "%ld%s"
 #elif defined(IRIX) || defined(HPUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD) || defined(INTERIX)
@@ -653,6 +652,7 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
 #else
       ret = setrlimit(resource,rlp);
 #endif
+
       sge_switch2admin_user();  
       if (ret) {
          /* exit or not exit ? */
@@ -668,8 +668,8 @@ static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
       }
 
       if (trace_rlimit) {
-         sprintf(trace_str, "%s setting: (soft "limit_fmt" hard "limit_fmt") "
-            "resulting: (soft "limit_fmt" hard "limit_fmt")",
+         sprintf(trace_str, "%s setting: (soft "limit_fmt", hard "limit_fmt") "
+                             "resulting: (soft "limit_fmt", hard "limit_fmt")",
             limit_str,
             FORMAT_LIMIT(rlp->rlim_cur),
             FORMAT_LIMIT(rlp->rlim_max),

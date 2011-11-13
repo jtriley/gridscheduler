@@ -2241,10 +2241,10 @@ endif
 
 if ( $HWLOC == 1 ) then
    set CFLAGS = "$CFLAGS -DTHREADBINDING -DHWLOC"
-   set CORE_INCLUDE = "$CORE_INCLUDE -I$SOURCE/3rdparty/hwloc/$HWLOC_VERSION/include/ -I$SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH/include"
-   # set LFLAGS = "$LFLAGS -L$SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH/src/.libs/"
+   set CORE_INCLUDE = "$CORE_INCLUDE -I$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/include/ -I$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/include"
+   # set LFLAGS = "$LFLAGS -L$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/src/.libs/"
    # set LIBS = "$LIBS -lhwloc"
-   set LIBS = "-L$SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH/src/.libs/ -lhwloc $LIBS"
+   set LIBS = "-L$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/src/.libs/ -lhwloc $LIBS"
 endif
 
 
@@ -2579,14 +2579,23 @@ endif
 if ( "$HWLOC" == 1 ) then
    echo _________3_r_d_p_a_r_t_y__H_W_L_O_C_______
 
-      if ( ! -d $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH || \
-           ! -r $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH/Makefile ) then
-         mkdir -p $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH
-         cd $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH
-         env CFLAGS="$HWLOC_CFLAGS" ../configure --enable-static --disable-shared --disable-xml  #  --disable-libxml2 --disable-pci
+      set maj_ver = `echo $HWLOC_VERSION| cut -f 1 -d .`
+      set min_ver = `echo $HWLOC_VERSION| cut -f 2 -d .`
+
+      if ( "$maj_ver" == 1 && "$min_ver" <= 2 ) then
+        set HWLOC_CFLAGS_EXTRA = "--disable-xml"
+      else
+        set HWLOC_CFLAGS_EXTRA = "--disable-libxml2 --disable-pci"
       endif
 
-      cd $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH
+      if ( ! -d $SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH || \
+           ! -r $SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/Makefile ) then
+         mkdir -p $SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH
+         cd $SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH
+         env CFLAGS="$HWLOC_CFLAGS" ../configure --enable-static --disable-shared $HWLOC_CFLAGS_EXTRA
+      endif
+
+      cd $SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH
 
       $MAKE $MAKEOPT -f Makefile "MAKE=$MAKE" "COMPILE_ARCH=$COMPILE_ARCH" $argv
 

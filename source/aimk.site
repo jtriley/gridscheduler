@@ -93,7 +93,8 @@ set BDB_LIB_SUFFIX =
 # http://gridengine.sunsource.net/issues/show_bug.cgi?id=2552
 set CORE_HOME = /vol2/tools/SW/libcore/$buildarch
 
-set HWLOC_VERSION = hwloc-1.2.2
+set HWLOC_VERSION = 1.3
+set HWLOC_DIRECTORY = hwloc-${HWLOC_VERSION}
 
 # 
 # KRB_HOME the directory where the include and lib directory of kerberos is

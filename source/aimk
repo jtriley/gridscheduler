@@ -2583,7 +2583,7 @@ if ( "$HWLOC" == 1 ) then
            ! -r $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH/Makefile ) then
          mkdir -p $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH
          cd $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH
-         env CFLAGS="$HWLOC_CFLAGS" ../configure --enable-static --disable-shared --disable-xml
+         env CFLAGS="$HWLOC_CFLAGS" ../configure --enable-static --disable-shared --disable-xml  #  --disable-libxml2 --disable-pci
       endif
 
       cd $SOURCE/3rdparty/hwloc/$HWLOC_VERSION/$COMPILE_ARCH

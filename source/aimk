@@ -259,7 +259,7 @@ set QMAKE            = 1
 set QMAKELIB         = ""
 set PLPA             = 0
 set HWLOC            = 1
-set HWLOC_CFLAGS     = ""
+set HWLOC_CFLAGS     = "-O2"
 set QTCSH            = 1
 set MAKEMTMALLOCLIB  = 1
 set MAKEJEMALLOCLIB  = 0
@@ -1499,7 +1499,7 @@ case LINUXX64:
       endif
    else if ($BUILDARCH == LINUXX64 && $FORCE_32BIT == 1) then
       set CFLAGS = "-m32 $CFLAGS"
-      set HWLOC_CFLAGS = "-m32"
+      set HWLOC_CFLAGS = "-m32 -O2"
       set LFLAGS = "-m32 $LFLAGS"
       set SHARED_LFLAGS = "-m32 $SHARED_LFLAGS"
    else if ($BUILDARCH == LINUXS390X && $FORCE_32BIT == 1) then

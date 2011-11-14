@@ -103,9 +103,9 @@ endif
 # Requires sed to be installed and accessible.
 if ( $MANMODE == "ge" ) then
    set xxQS_NAMExx = "Grid Engine" 
-   set xxQS_NAME_Sxx = "GE" 
-   set xxqs_name_sxx = "ge" 
-   set xxRELxx = "GE 6.2u5"
+   set xxQS_NAME_Sxx = "SGE" 
+   set xxqs_name_sxx = "sge" 
+   set xxRELxx = "OGS\/Grid Engine 2011.11"
 else if ( $MANMODE == "sge" ) then
    set xxQS_NAMExx = "Sun Grid Engine"
    set xxQS_NAME_Sxx = "SGE"

@@ -34,7 +34,7 @@
 
 #include "gdi/version.h"
 
-const char GDI_VERSION[] = "6.2u5";
+const char GDI_VERSION[] = "2011.11"; /* "6.2u5"; */
 
 const gdi_ulong32 GRM_GDI_VERSION = 0x100020F8;
 
@@ -71,8 +71,8 @@ vdict_t GRM_GDI_VERSION_ARRAY[] =
 const char GE_LONGNAME[] = "Sun Grid Engine";
 const char GE_SHORTNAME[] = "SGE";
 #else
-const char GE_LONGNAME[] = "Grid Engine";
-const char GE_SHORTNAME[] = "GE";
+const char GE_LONGNAME[] = "Open Grid Scheduler/Grid Engine";
+const char GE_SHORTNAME[] = "OGS/GE";
 #endif
 
 #ifdef ADD_COPYRIGHT
@@ -83,8 +83,9 @@ const char GE_SHORTNAME[] = "GE";
 const char SFLN_ELN[] = "\n\
    Grid Engine is based on code donated by Sun Microsystems.\n\
    The copyright is owned by Sun Microsystems and other contributors.\n\
-   It has been made available to the open source community under the SISSL license.\n\
-   For further information and the latest news visit: @fBhttp://gridengine.sunsource.net\n\n";
+   It has been made available to the open source community under the SISSL license.\n\n\
+   The Open Grid Scheduler project is the maintainer of open source Grid Engine.\n\
+   For further information: @fBhttp://gridscheduler.sourceforge.net\n\n";
 
 const char DQS_ACK[] = "\n\
 We would like to acknowledge and thank the efforts of the\n\

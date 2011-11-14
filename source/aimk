@@ -256,6 +256,7 @@ set QMON             = 1
 set CORE             = 1
 set REMOTE           = 1
 set QMAKE            = 1
+set QMAKELIB         = ""
 set PLPA             = 0
 set HWLOC            = 1
 set HWLOC_CFLAGS     = ""
@@ -1817,6 +1818,7 @@ case SOLARISAMD64:
    set COMPILE_DC = 1
 
    set ERR_WARN_NONE = "-errwarn=%none" # is set in XCFLAGS and for R_E_M_O_T_E target to switch off -errwarn=%all
+   set NOERR_CFLAG   = "-errwarn=%none"
    set ERR_WARN_ALL = "-errwarn=%all"  # is set in cc specific section below
    set CFLAGS = "$CFLAGS -DSOLARIS -D$BUILDARCH -D__EXTENSIONS__ -D_POSIX_C_SOURCE=199506L -DGETHOSTBYNAME_R5 -DGETHOSTBYADDR_R7 -DUSE_POLL"
    set SHAREDLD = $CC
@@ -1960,6 +1962,8 @@ case SOLARISAMD64:
       endif
    endif
 
+   set HWLOC_CFLAGS = "$OFLAG $MEMFLAG"
+
    if ( $SOLARISPSET == 1 ) then
       set CFLAGS = "$CFLAGS -DSOLARISPSET"
    endif
@@ -1981,6 +1985,7 @@ case SOLARISAMD64:
       # Solaris versions >= 10 have posix fork()
       set LIBS     = "-lsocket -lnsl -lm -lthread -llgrp -lkstat"
    endif
+   set QMAKELIB    = "-lnsl"
    set LOADAVGLIBS = "-lkstat"
    set FSTYPELIBS = "-lkstat"
 
@@ -2957,7 +2962,7 @@ if ( "$QMAKE" == 1) then
 	! -r $SOURCE/3rdparty/qmake/$COMPILE_ARCH/Makefile ) then
       mkdir -p $SOURCE/3rdparty/qmake/$COMPILE_ARCH
       cd $SOURCE/3rdparty/qmake/$COMPILE_ARCH
-      env REMOTE=sge CFLAGS="${CFLAGS} ${NOERR_CFLAG}" SGE_ARCH=$buildarch \
+      env REMOTE=sge CFLAGS="${CFLAGS} ${NOERR_CFLAG}" LIBS="$QMAKELIB" SGE_ARCH=$buildarch \
        ../configure --srcdir=..
    endif
 

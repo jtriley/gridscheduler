@@ -954,7 +954,7 @@ static int get_load_avg(double loadv[], int nelem)
    return 0;
 }
 
-#elif defined(OGLIBC_LINUX)
+#elif defined(OGLIBC_LINUX) || defined(CYGWIN)
 
 static int get_load_avg(
 double loadv[],
@@ -1175,7 +1175,7 @@ int sge_getloadavg(double loadavg[], int nelem)
 {
    int   elem = 0;   
 
-#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5) || defined(OGLIBC_LINUX) || defined(HAS_AIX_PERFLIB)
+#if defined(ALPHA4) || defined(ALPHA5) || defined(IRIX) || defined(HPUX) || defined(CRAY) || defined(NECSX4) || defined(NECSX5) || defined(HAS_AIX_PERFLIB) || defined(OGLIBC_LINUX) || defined(CYGWIN)
    elem = get_load_avg(loadavg, nelem);
 #elif defined(SOLARIS) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN) || defined(LINUX)
    elem = getloadavg(loadavg, nelem);  /* <== library function */

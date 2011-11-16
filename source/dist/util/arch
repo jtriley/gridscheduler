@@ -100,6 +100,9 @@ CRSOS)
       ARCH=craysmp
    fi
    ;;
+CYGWIN*)
+   ARCH=cygwin-x86
+   ;;
 Darwin)
    case $osmachine in
       i386)

@@ -78,7 +78,7 @@
 #   include "sge_smf.h"
 #endif
 
-#if !defined(INTERIX)
+#if !defined(INTERIX) && !defined(CYGWIN)
 static void init_sig_action_and_mask(void);
 #endif
 static int set_file_descriptor_limit(void);
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
     */
    has_daemonized = sge_daemonize_qmaster();
    file_descriptor_settings_result = set_file_descriptor_limit();
-#if !defined(INTERIX)
+#if !defined(INTERIX) && !defined(CYGWIN)
    init_sig_action_and_mask();
 #endif
 
@@ -447,7 +447,7 @@ int main(int argc, char* argv[])
    return 0;
 } /* main() */
 
-#if !defined(INTERIX)
+#if !defined(INTERIX) && !defined(CYGWIN)
 
 /****** qmaster/sge_qmaster_main/init_sig_action_and_mask() *******************
 *  NAME

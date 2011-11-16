@@ -35,8 +35,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifdef LINUX
+#ifdef __GNU_LIBRARY__
 #include <mcheck.h>
+#define HAVE_MCHECK
 #endif
 
 #include "rmon/sgermon.h"
@@ -163,7 +164,7 @@ static u_long32 monitor_time = 0;
 static bool enable_reschedule_kill = false;
 static bool enable_reschedule_slave = false;
 
-#ifdef LINUX
+#ifdef HAVE_MCHECK
 static bool enable_mtrace = false;
 #endif
 
@@ -645,7 +646,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       char* execd_params = mconf_get_execd_params();
       char* reporting_params = mconf_get_reporting_params();
       u_long32 load_report_time = mconf_get_load_report_time();
-#ifdef LINUX
+#ifdef HAVE_MCHECK
       bool mtrace_before = enable_mtrace;
 #endif
 
@@ -725,7 +726,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &enable_forced_qdel_if_unknown)) {
             continue;
          } 
-#ifdef LINUX
+#ifdef HAVE_MCHECK
          if (parse_bool_param(s, "ENABLE_MTRACE", &enable_mtrace)) {
             continue;
          }
@@ -800,7 +801,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       sge_free_saved_vars(conf_context);
       conf_context = NULL;
      
-#ifdef LINUX
+#ifdef HAVE_MCHECK
       /* enable/disable GNU malloc library facility for recording of all 
          memory allocation/deallocation 
          requires MALLOC_TRACE in environment (see mtrace(3) under Linux) */

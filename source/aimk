@@ -1534,7 +1534,7 @@ case LINUXX64:
 
    set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
 
-   set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
+   set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DLINUX_NATIVE -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
 
    if ("$WERR" == 1) then
       set CFLAGS = "$CFLAGS -Werror"
@@ -1627,7 +1627,97 @@ case LINUXX64:
    endif
 
    breaksw
-   
+
+case CYGWIN_X86:
+   set MAKEWINGRIDLIB   = 0
+   set MAKEWINGRIDAPP   = 0
+   set AUTHLIBS = "-lcrypt -lpam"
+
+   set COMPILE_DC = 1
+
+   if ($OPTIMIZATION == 1 ) then
+      set OFLAG = "-O2"
+   else
+      set OFLAG = ""
+   endif
+
+   set CC  = gcc
+   set CXX = g++
+
+   if ($DEBUGGED == 1) then
+      set DEBUG_FLAG = "-g $INSURE_FLAG -DSGE_LOCK_DEBUG"
+   endif
+
+   if ($GPROFFED == 1) then
+      set DEBUG_FLAG = "$DEBUG_FLAG -pg"
+   endif
+
+   if ($COVED == 1) then
+      set DEBUG_FLAG = "$DEBUG_FLAG -fprofile-arcs -ftest-coverage"
+   endif
+
+   set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
+
+   set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DCYGWIN -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME -DGETHOSTBYADDR -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
+
+   if ("$WERR" == 1) then
+      set CFLAGS = "$CFLAGS -Werror"
+   endif
+
+   if ("$STACKPROTECT" == 1) then
+      set CFLAGS = "$CFLAGS -fstack-protector-all"
+   endif
+
+   if ("$ADOC" == 1) then
+      set CFLAGS = "$CFLAGS -Wno-error"
+   endif
+
+   if ( $TARGET_BITS == TARGET_32BIT ) then
+      set CFLAGS = "$CFLAGS -D_FILE_OFFSET_BITS=64"
+   endif
+
+   set LFLAGS   = "$DEBUG_FLAG $LFLAGS"
+
+   set SHAREDLD = $CC
+   set SHARED_LFLAGS = "$SHARED_LFLAGS -L. -shared"
+
+   set SONAME_LFLAG_DRMAA10 = "-Wl,-soname,libdrmaa.so.1.0"
+   set SONAME_LFLAG_DRMAA95 = "-Wl,-soname,libdrmaa.so.0.95"
+
+   set SHAREDEXT = ".dll"
+
+   if ( $SHAREDLIBS == 1 || $SPOOLING_METHOD == dynamic ) then
+      set LFLAGS = "$LFLAGS -rdynamic"
+   endif
+
+   set NOERR_CFLAG = "-Wno-error"
+   set NOERR_PROTO = "-Wno-strict-prototypes"
+
+   set XMTDEF   = ""
+
+   if ($TARGET_BITS == TARGET_32BIT ) then
+      set XLIBD    = "-L/usr/X11R6/lib"
+   else
+      set XLIBD    = "-L/usr/X11R6/lib64"
+   endif
+
+   set XLFLAGS  = "$XLIBD"
+
+   set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
+
+   set XINCD    = "$XMTINCD $XINCD -I/usr/X11R6/include"
+   set XCFLAGS  = "-Wno-strict-prototypes -Wno-error $XMTDEF $XINCD $XCFLAGS"
+   set XLIBS    = "-lXm -lXpm -lXt -lXext -lXmu -lX11 -lSM -lICE -lXp"
+
+   set JAVA_ARCH = "linux"
+
+   # due to -rpath relative_path the LD_LIBRARY_PATH not needed anymore
+   set RUNPATH       = -Wl,-rpath,'\$$ORIGIN'/../../lib/$buildarch
+   set LFLAGS        = "$LFLAGS $RUNPATH"
+   set SHARED_LFLAGS = "$SHARED_LFLAGS $RUNPATH"
+
+   breaksw
+
 case WIN32_X86:
    setenv LD_LIBRARY_PATH /usr/lib/x86:/usr/local/lib
    set CC = gcc

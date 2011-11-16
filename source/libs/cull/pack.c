@@ -37,7 +37,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <rpc/rpc.h>
+
+#if defined(CYGWIN)
+# include <rpc/xdr.h>
+#else
+# include <rpc/rpc.h>
+#endif
+
 #include <rpc/types.h>
 
 #if defined(INTERIX)

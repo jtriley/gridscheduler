@@ -43,7 +43,7 @@ int verydummyprocfs;
 #include <sys/types.h>
 #include <sys/signal.h>
 
-#if !defined(CRAY) && !defined(NECSX4) && !defined(NECSX5) && !defined(AIX)
+#if !defined(CRAY) && !defined(NECSX4) && !defined(NECSX5) && !defined(AIX) && !defined(CYGWIN)
 #include <sys/syscall.h>
 #endif
 

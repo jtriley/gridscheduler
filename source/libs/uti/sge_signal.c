@@ -41,7 +41,7 @@
 
 #include "msg_utilib.h"
 
-#ifdef WIN32
+#if defined(WIN32) || defined(CYGWIN)
 #   define SIGIOT 6
 #   define SIGURG 16
 #   define SIGIO 23

@@ -6,6 +6,12 @@
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
 
+RH-2011-11-16-1:  Enhancem.   Cygwin port - Part 1
+
+-------------------------------------------------------------------------------
+
+RH-2011-11-16-0:  SVN:        Grid Engine 2011.11
+
 RH-2011-11-14-1:  Enhancem.   manpage update
 
 RH-2011-11-13-6:  Bugfix:     Minor fix for Hadoop setup.pl (from Kevin Squire)
@@ -97,7 +103,7 @@ RH-2011-04-03-0: Enhancem.    lock cleanup
 
 -------------------------------------------------------------------------------
 
-RH-2011-04-01-0: CVS:         OGS 6.2u5p2
+RH-2011-04-01-0: SVN:         OGS 6.2u5p2
 
 RC-2011-03-27-0: Cleanup:     more cleanups
 
@@ -132,7 +138,7 @@ RH-2011-03-07-0: Enhancem.    checkin the S/390 port done by Rayson Ho
 
 -------------------------------------------------------------------------------
 
-RH-2011-02-25-0: CVS:         created trunk, tags, branches (OGS 6.2u5p1)
+RH-2011-02-25-0: SVN:         created trunk, tags, branches (OGS 6.2u5p1)
 
 SD-2010-09-15-0: Bugfix:      slotwise preemption fails to unsuspend one job 
                               per host
@@ -146,4 +152,4 @@ RH-2010-08-22-0: Bugfix:      compilation error on Linux
 
 -------------------------------------------------------
 
-RC-2010-08-18-0: CVS:         created from V62u5_TAG
+RC-2010-08-18-0: SVN:         created from V62u5_TAG

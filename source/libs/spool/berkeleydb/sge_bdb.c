@@ -202,11 +202,6 @@ bool spool_berkeleydb_create_environment(lList **answer_list, bdb_info info)
       {
          int flags = 0, dbret;
 
-         if (server != NULL)
-         {
-            flags |= DB_RPCCLIENT;
-         }
-
          PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
          dbret = db_env_create(&env, flags);
          PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
@@ -259,23 +254,6 @@ bool spool_berkeleydb_create_environment(lList **answer_list, bdb_info info)
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                           ANSWER_QUALITY_ERROR,
                                           MSG_BERKELEY_COULDNTESETUPLOCKDETECTION_IS,
-                                          dbret, db_strerror(dbret));
-                  ret = false;
-               }
-            }
-            else
-            {
-               /* if we use an RPC server, set it in the DB_ENV */
-
-               PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-               dbret = env->set_rpc_server(env, NULL, server, 0, 0, 0);
-               PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-
-               if (dbret != 0)
-               {
-                  answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                          ANSWER_QUALITY_ERROR, 
-                                          MSG_BERKELEY_COULDNTESETRPCSERVER_IS,
                                           dbret, db_strerror(dbret));
                   ret = false;
                }
@@ -600,7 +578,8 @@ spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
           */
          if (bdb_get_server(info) != NULL)
          {
-            flags |= DB_TXN_NOWAIT;
+            /* libbdb5.1 no longer supports RPC */
+            ret = false;
          }
 
          PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
@@ -747,6 +726,8 @@ bool spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
       else
       {
          ret = spool_berkeleydb_trigger_rpc(answer_list, info);
+         /* bdb5.1 no longer supports RPC */
+         ret = false;
       }
 
       bdb_set_next_clear(info, trigger + BERKELEYDB_CLEAR_INTERVAL);

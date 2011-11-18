@@ -121,6 +121,10 @@ bdb_create(const char *server, const char *path)
    if (ret != 0) {
       fprintf(stderr, "can't initialize key for thread local storage: %s\n", strerror(ret));
    }
+   if (server) {
+      fprintf(stderr, "bdb5.1 no longer supports RPC access\n");
+      abort();
+   }
    info->server = server;
    info->path   = path;
    info->env    = NULL;

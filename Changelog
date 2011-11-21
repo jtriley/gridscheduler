@@ -6,7 +6,10 @@
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
 
-RH-2011-11-19-1:  Bugfix:     Exported bash functions causes erroneous
+RH-2011-11-21-0:  Enhancem.   set JAVA_LIB_ARCH to i386 if -32 flag was passed
+                  From:       Justin Riley
+
+RH-2011-11-19-0:  Bugfix:     Exported bash functions causes erroneous
                               "environment" file
                   Issue:      2173
 

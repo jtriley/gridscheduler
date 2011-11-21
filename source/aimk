@@ -2204,7 +2204,11 @@ if ( $JNI == 1 ) then
              breaksw
          case linux-x64:
          case sol-amd64:
-             set JAVA_LIB_ARCH = amd64
+             if ($FORCE_32BIT == 1) then
+                set JAVA_LIB_ARCH = i386
+             else
+                set JAVA_LIB_ARCH = amd64
+             endif
              breaksw
          case linux-ia64:
              set JAVA_LIB_ARCH = ia64

@@ -146,6 +146,7 @@ ErrUsage()
    echo "       -resetprog     = set ARCH="" (useful to override distinst.privat)"
    echo "       -tcc           = create file .COMMON_CHANGED if common changed"
    echo "       -v             = more verbose"
+   echo "       -y             = automatically accept all prompts"
    echo "       -vdir <dir>    = define version directory for distribution"
    echo "<other progs>:"
    echo "       \"arco\"       = ARCo files (dbwriter, reporting)"
@@ -430,6 +431,7 @@ instbdb=true
 instarco=false
 instguiinst=true
 instsgeinspect=false
+accept_prompts=false
 enforce_shlibpath=false
 
 cmdname=`basename $0`
@@ -564,6 +566,9 @@ while [ $# -ge 1 ]; do
    -v)
       verbose=true
       ;;
+   -y)
+      accept_prompts=true
+      ;;
    -vdir)
       shift
       if [ "$1" != "" ]; then
@@ -682,16 +687,18 @@ echo
 echo   "    Installing:" $PROG
 echo   " Architectures:" $ARCH
 echo   "Base directory:" $DEST_SGE_ROOT
-printf "   OK [Y/N][Y]: "
 
-read ans
-if [ "$ans" = y -o "$ans" = Y -o "$ans" = "" ]; then
-   :
-else
-   echo
-   echo Ciao
-   echo
-   exit 1
+if [ $accept_prompts = false ]; then
+   printf "   OK [Y/N][Y]: "
+   read ans
+   if [ "$ans" = y -o "$ans" = Y -o "$ans" = "" ]; then
+      :
+   else
+      echo
+      echo Ciao
+      echo
+      exit 1
+   fi
 fi
 
 echo

@@ -83,7 +83,7 @@ set OPENSSL_HOME = /build/openssl-install
 # BERKELEYDB_HOME the directory where the include and lib directory of
 # Berkeley DB is installed
 #
-set BERKELEYDB_HOME = /build/berkeleydb
+set BERKELEYDB_HOME =
 set BDB_INCLUDE_SUBDIR =
 set BDB_LIB_SUBDIR =
 set BDB_LIB_SUFFIX =

@@ -2064,20 +2064,24 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
 {
    DENTER(TOP_LAYER, "var_list_parse_from_environment");
 
-   if (!lpp || !envp) {
+   if (!lpp || !envp)
+   {
       DEXIT;
       return 1;
    }
 
-   if (!*lpp) {
+   if (!*lpp)
+   {
       *lpp = lCreateList("env list", VA_Type);
-      if (!*lpp) {
+      if (!*lpp)
+      {
          DEXIT;
-         return 3;
+         return 1;
       }
    }
 
-   for (; *envp; envp++) {
+   for (; *envp; envp++)
+   {
       char *env_name;
       char *env_description;
       char *env_entry;
@@ -2094,7 +2098,7 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
       SGE_ASSERT((env_name));
       lSetString(ep, VA_variable, env_name);
 
-      env_description = sge_strtok_r((char *) 0, "\n", &context);
+      env_description = sge_strtok_r(NULL, "\0", &context);
       if (env_description)
          lSetString(ep, VA_value, env_description);
       FREE(env_entry);

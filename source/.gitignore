@@ -2,3 +2,8 @@
 *LINUX86
 *_dependencies
 CLASSES
+3rdparty/hwloc/hwloc-1.2.2/tests/embedded/Makefile.in
+dist/DetectJvmLibrary/build/
+dist/qmon/Qmon
+libs/jgdi/build/
+libs/jgdi/cullconv/build/

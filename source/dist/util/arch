@@ -119,7 +119,7 @@ Darwin)
                fi
                ;;
             *)
-               darwin_machine=unknown
+               darwin_machine=x64
                ;;
             esac
          ;;

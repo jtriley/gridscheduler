@@ -1162,17 +1162,20 @@ int lCompare(const lListElem *ep, const lCondition *cp)
 
    DENTER(CULL_LAYER, "lCompare");
 
-   if (!ep) {
+   if (!ep)
+   {
       LERROR(LEELEMNULL);
       DRETURN(0);
    }
 
    /* no conditions ok */
-   if (!cp) {
+   if (!cp)
+   {
       DRETURN(1);
    }
 
-   switch (cp->op) {
+   switch (cp->op)
+   {
    case EQUAL:
    case NOT_EQUAL:
    case LOWER_EQUAL:
@@ -1181,17 +1184,21 @@ int lCompare(const lListElem *ep, const lCondition *cp)
    case GREATER:
    case SUBSCOPE:
 
-      switch (mt_get_type(cp->operand.cmp.mt)) {
+      switch (mt_get_type(cp->operand.cmp.mt))
+      {
       case lIntT:
          result = intcmp(lGetPosInt(ep, cp->operand.cmp.pos), cp->operand.cmp.val.i);
          break;
+
       case lStringT:
-         if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos))) {
+         if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos)))
+         {
             LERROR(LENULLSTRING);
             DPRINTF(("lGetPosString in lCompare\n"));
             DRETURN(0);
          }
-         if (!(str2 = cp->operand.cmp.val.str)) {
+         if (!(str2 = cp->operand.cmp.val.str))
+         {
             DPRINTF(("cp->operand.cmp.val.str in lCompare\n"));
             LERROR(LENULLSTRING);
             DRETURN(0);
@@ -1199,13 +1206,16 @@ int lCompare(const lListElem *ep, const lCondition *cp)
          result = strcmp(str1, str2);
          DPRINTF(("strcmp(%s, %s)(lStringT) = %d\n", str1, str2, result));
          break;
+
       case lHostT:
-         if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos))) {
+         if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos)))
+         {
             LERROR(LENULLSTRING);
             DPRINTF(("lGetPosHost in lCompare\n"));
             DRETURN(0);
          }
-         if (!(str2 = cp->operand.cmp.val.host)) {
+         if (!(str2 = cp->operand.cmp.val.host))
+         {
             DPRINTF(("cp->operand.cmp.val.host in lCompare\n"));
             LERROR(LENULLSTRING);
             DRETURN(0);
@@ -1215,61 +1225,68 @@ int lCompare(const lListElem *ep, const lCondition *cp)
          break;
 
       case lUlongT:
-         result = ulongcmp(lGetPosUlong(ep, cp->operand.cmp.pos), 
-                           cp->operand.cmp.val.ul);
+         result = ulongcmp(lGetPosUlong(ep, cp->operand.cmp.pos), cp->operand.cmp.val.ul);
          break;
+
       case lListT:
-         result = (lFindFirst(lGetPosList(ep, cp->operand.cmp.pos), 
-                              cp->operand.cmp.val.cp) != NULL);
+         result = (lFindFirst(lGetPosList(ep, cp->operand.cmp.pos), cp->operand.cmp.val.cp) != NULL);
          DRETURN(result);
+
       case lFloatT:
-         result = floatcmp(lGetPosFloat(ep, cp->operand.cmp.pos), 
-                           cp->operand.cmp.val.fl);
+         result = floatcmp(lGetPosFloat(ep, cp->operand.cmp.pos), cp->operand.cmp.val.fl);
          break;
+
       case lDoubleT:
-         result = doublecmp(lGetPosDouble(ep, cp->operand.cmp.pos), 
-                            cp->operand.cmp.val.db);
+         result = doublecmp(lGetPosDouble(ep, cp->operand.cmp.pos), cp->operand.cmp.val.db);
          break;
+
       case lLongT:
-         result = longcmp(lGetPosLong(ep, cp->operand.cmp.pos), 
-                          cp->operand.cmp.val.l);
+         result = longcmp(lGetPosLong(ep, cp->operand.cmp.pos), cp->operand.cmp.val.l);
          break;
+
       case lCharT:
-         result = charcmp(lGetPosChar(ep, cp->operand.cmp.pos), 
-                          cp->operand.cmp.val.c);
+         result = charcmp(lGetPosChar(ep, cp->operand.cmp.pos), cp->operand.cmp.val.c);
          break;
+
       case lBoolT:
-         result = boolcmp(lGetPosBool(ep, cp->operand.cmp.pos), 
-                          cp->operand.cmp.val.b);
+         result = boolcmp(lGetPosBool(ep, cp->operand.cmp.pos), cp->operand.cmp.val.b);
          break;
+
       case lRefT:
-         result = refcmp(lGetPosRef(ep, cp->operand.cmp.pos), 
-                         cp->operand.cmp.val.ref);
+         result = refcmp(lGetPosRef(ep, cp->operand.cmp.pos), cp->operand.cmp.val.ref);
          break;
+
       default:
          unknownType("lCompare");
          DRETURN(0);
       }
 
-      switch (cp->op) {
+      switch (cp->op)
+      {
       case EQUAL:
          result = (result == 0);
          break;
+
       case NOT_EQUAL:
          result = (result != 0);
          break;
+
       case LOWER_EQUAL:
          result = (result == -1 || result == 0);
          break;
+
       case LOWER:
          result = (result == -1);
          break;
+
       case GREATER_EQUAL:
          result = (result == 1 || result == 0);
          break;
+
       case GREATER:
          result = (result == 1);
          break;
+
       default:
          LERROR(LEOPUNKNOWN);
          DRETURN(0);
@@ -1278,79 +1295,97 @@ int lCompare(const lListElem *ep, const lCondition *cp)
 
    case STRCASECMP:
    case HOSTNAMECMP:
-      if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT)) {
+      if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT))
+      {
          unknownType("lCompare");
          DRETURN(0);
       }
 
-      if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
+      if (mt_get_type(cp->operand.cmp.mt) == lStringT)
+      {
          str1 = lGetPosString(ep, cp->operand.cmp.pos);
-      } else {
+      }
+      else
+      {
          str1 = lGetPosHost(ep, cp->operand.cmp.pos);
       }
-      if (str1 == NULL) {
+      if (str1 == NULL)
+      {
           LERROR(LENULLSTRING);
           DPRINTF(("lGetPosString in lCompare\n"));
           DRETURN(0);
       }
 
-      if (!(str2 = cp->operand.cmp.val.str)) {
+      if (!(str2 = cp->operand.cmp.val.str))
+      {
          DPRINTF(("cp->operand.cmp.val.str in lCompare\n"));
          LERROR(LENULLSTRING);
          DRETURN(0);
       }
 
-      if (cp->op == STRCASECMP ) {
+      if (cp->op == STRCASECMP )
+      {
          result = SGE_STRCASECMP(str1, str2);
-      } else {
+      }
+      else
+      {
          result = sge_hostcmp(str1, str2);
       }
       result = (result == 0);
       break;
 
    case PATTERNCMP:
-      if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT)) {
+      if ((mt_get_type(cp->operand.cmp.mt) != lStringT) && (mt_get_type(cp->operand.cmp.mt) != lHostT))
+      {
          unknownType("lCompare");
          DRETURN(0);
       }
 
-      if (mt_get_type(cp->operand.cmp.mt) == lStringT) {
-         if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos))) {
+      if (mt_get_type(cp->operand.cmp.mt) == lStringT)
+      {
+         if (!(str1 = lGetPosString(ep, cp->operand.cmp.pos)))
+         {
             str1 = "";
          }
 
-         if (!(str2 = cp->operand.cmp.val.str)) {
+         if (!(str2 = cp->operand.cmp.val.str))
+         {
             DPRINTF(("cp->operand.cmp.val.str in lCompare\n"));
             LERROR(LENULLSTRING);
             DRETURN(0);
          }
-      } else {
-         if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos))) {
+      }
+      else
+      {
+         if (!(str1 = lGetPosHost(ep, cp->operand.cmp.pos)))
+         {
             str1 = "";
          }
 
-         if (!(str2 = cp->operand.cmp.val.host)) {
+         if (!(str2 = cp->operand.cmp.val.host))
+         {
             DPRINTF(("cp->operand.cmp.val.host in lCompare\n"));
             LERROR(LENULLSTRING);
             DRETURN(0);
          }
       }
 
-      result = !fnmatch(str2, str1, 0);
+      result = !fnmatch(str2, str1, FNM_NOESCAPE);
       break;
 
 
    case BITMASK:
-      if (mt_get_type(cp->operand.cmp.mt) != lUlongT) {
+      if (mt_get_type(cp->operand.cmp.mt) != lUlongT)
+      {
          unknownType("lCompare");
          DRETURN(0);
       }
-      result = bitmaskcmp(lGetPosUlong(ep, cp->operand.cmp.pos), 
-                          cp->operand.cmp.val.ul);
+      result = bitmaskcmp(lGetPosUlong(ep, cp->operand.cmp.pos), cp->operand.cmp.val.ul);
       break;
 
    case AND:
-      if (!lCompare(ep, cp->operand.log.first)) {
+      if (!lCompare(ep, cp->operand.log.first))
+      {
          result = 0;
          break;
       }

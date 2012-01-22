@@ -1703,15 +1703,20 @@ static int psRetrieveOSJobData(void) {
       int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
       size_t bufSize = 0;
 
-      if (sysctl(mib, 4, NULL, &bufSize, NULL, 0) < 0) {
+      if (sysctl(mib, 4, NULL, &bufSize, NULL, 0) < 0)
+      {
          DPRINTF(("sysctl() failed(1)\n"));
          DRETURN(-1);
       }
-      if ((procs = (struct kinfo_proc *)malloc(bufSize)) == NULL) {
+
+      if ((procs = malloc(bufSize)) == NULL)
+      {
          DPRINTF(("malloc() failed\n"));
          DRETURN(-1);
       }
-      if (sysctl(mib, 4, procs, &bufSize, NULL, 0) < 0) {
+
+      if (sysctl(mib, 4, procs, &bufSize, NULL, 0) < 0)
+      {
          DPRINTF(("sysctl() failed(2)\n"));
          FREE(procs);
          DRETURN(-1);
@@ -1719,29 +1724,38 @@ static int psRetrieveOSJobData(void) {
       procs_begin = procs;
       nprocs = bufSize/sizeof(struct kinfo_proc);
       
-      for (; nprocs >= 0; nprocs--, procs++) {
-         for (curr=job_list.next; curr != &job_list; curr=curr->next) {
+      for (; nprocs >= 0; nprocs--, procs++)
+      {
+         for (curr=job_list.next; curr != &job_list; curr=curr->next)
+         {
             job_elem = LNK_DATA(curr, job_elem_t, link);
 
-            for (i = 0; i < procs->kp_eproc.e_ucred.cr_ngroups; i++) {
-               if (job_elem->job.jd_jid == procs->kp_eproc.e_ucred.cr_groups[i]) {
+            for (i = 0; i < procs->kp_eproc.e_ucred.cr_ngroups; i++)
+            {
+               if (job_elem->job.jd_jid == procs->kp_eproc.e_ucred.cr_groups[i])
+               {
                   lnk_link_t  *curr2;
                   proc_elem_t *proc_elem;
                   int newprocess = 1;
                   
-                  if (job_elem->job.jd_proccount != 0) {
-                     for (curr2=job_elem->procs.next; curr2 != &job_elem->procs; curr2=curr2->next) {
+                  if (job_elem->job.jd_proccount != 0)
+                  {
+                     for (curr2=job_elem->procs.next; curr2 != &job_elem->procs; curr2=curr2->next)
+                     {
                         proc_elem = LNK_DATA(curr2, proc_elem_t, link);
 
-                        if (proc_elem->proc.pd_pid == procs->kp_proc.p_pid) {
+                        if (proc_elem->proc.pd_pid == procs->kp_proc.p_pid)
+                        {
                            newprocess = 0;
                            break;
                         }
                      }
                   }
-                  if (newprocess) {
+                  if (newprocess)
+                  {
                      proc_elem = malloc(sizeof(proc_elem_t));
-                     if (proc_elem == NULL) {
+                     if (proc_elem == NULL)
+                     {
                         FREE(procs_begin);
                         DRETURN(0);
                      }
@@ -1753,7 +1767,9 @@ static int psRetrieveOSJobData(void) {
 
                      LNK_ADD(job_elem->procs.prev, &proc_elem->link);
                      job_elem->job.jd_proccount++;
-                  } else {
+                  }
+                  else
+                  {
                      /* save previous usage data - needed to build delta usage */
                      old_time = proc_elem->proc.pd_utime + proc_elem->proc.pd_stime;
                      old_vmem  = proc_elem->vmem;
@@ -1768,36 +1784,51 @@ static int psRetrieveOSJobData(void) {
                      mach_port_t task;
                      unsigned int info_count = TASK_BASIC_INFO_COUNT;
 
-                     if (task_for_pid(mach_task_self(), proc_elem->proc.pd_pid, &task) != KERN_SUCCESS) {
+                     if (task_for_pid(mach_task_self(), proc_elem->proc.pd_pid, &task) != KERN_SUCCESS)
+                     {
                         DPRINTF(("task_for_pid() error"));
-                     } else {
-                        if (task_info(task, TASK_BASIC_INFO, (task_info_t)&t_info, &info_count) != KERN_SUCCESS) {
+                     }
+                     else
+                     {
+                        if (task_info(task, TASK_BASIC_INFO, (task_info_t)&t_info, &info_count) != KERN_SUCCESS)
+                        {
                            DPRINTF(("task_info() error"));
-                        } else {
-                           proc_elem->vmem           = t_info.virtual_size/1024;
+                        }
+                        else
+                        {
+                           proc_elem->vmem           = t_info.virtual_size;
+                           proc_elem->rss            = t_info.resident_size;
+
                            DPRINTF(("vmem: %d\n", proc_elem->vmem));
-                           proc_elem->rss            = t_info.resident_size/1024;
-                           DPRINTF(("rss: %d\n", proc_elem->rss));
+                           DPRINTF(("rss: %d\n",  proc_elem->rss));
                         }
 
                         info_count = TASK_THREAD_TIMES_INFO_COUNT;
-                        if (task_info(task, TASK_THREAD_TIMES_INFO, (task_info_t)&t_times_info, &info_count) != KERN_SUCCESS) {
+                        if (task_info(task, TASK_THREAD_TIMES_INFO, (task_info_t)&t_times_info, &info_count) != KERN_SUCCESS)
+                        {
                            DPRINTF(("task_info() error\n"));
-                        } else {
+                        }
+                        else
+                        {
                            proc_elem->proc.pd_utime  = t_times_info.user_time.seconds;
-                           DPRINTF(("user_time: %d\n", proc_elem->proc.pd_utime));
                            proc_elem->proc.pd_stime  = t_times_info.system_time.seconds;
+
+                           DPRINTF(("user_time: %d\n",   proc_elem->proc.pd_utime));
                            DPRINTF(("system_time: %d\n", proc_elem->proc.pd_stime));
                         }
                      }
+                     mach_port_deallocate(mach_task_self(), task);
                   }
 
                   proc_elem->proc.pd_uid    = procs->kp_eproc.e_ucred.cr_uid;
-                  DPRINTF(("uid: %d\n", proc_elem->proc.pd_uid));
                   proc_elem->proc.pd_gid    = procs->kp_eproc.e_pcred.p_rgid;
+
+                  DPRINTF(("uid: %d\n", proc_elem->proc.pd_uid));
                   DPRINTF(("gid: %d\n", proc_elem->proc.pd_gid));
+
                   proc_elem->mem = ((proc_elem->proc.pd_stime + proc_elem->proc.pd_utime) - old_time) *
                                          ((old_vmem + proc_elem->vmem)/2);
+
                   DPRINTF(("mem %d\n", proc_elem->mem));
                }
             }

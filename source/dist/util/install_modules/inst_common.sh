@@ -1983,7 +1983,7 @@ SearchForExistingInstallations()
    fi
    
    #MacOS overwrites the files (all services share single file)
-   if [ "$ARCH" = darwin -o "$ARCH" = darwin-ppc -o "$ARCH" = darwin-x86 ]; then
+   if [ "$ARCH" = darwin -o "$ARCH" = darwin-ppc -o "$ARCH" = darwin-x86 -o "$ARCH" = darwin-x64 ]; then
       return
    fi
     

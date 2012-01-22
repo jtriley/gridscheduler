@@ -723,18 +723,19 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    /*
    ** tag only jobs which satisfy the user list
    */
-   if (lGetNumberOfElem(qstat_env->user_list)) {
+   if (lGetNumberOfElem(qstat_env->user_list))
+   {
       DPRINTF(("------- selecting jobs -----------\n"));
 
       /* ok, now we untag the jobs if the user_list was specified */ 
       for_each(up, qstat_env->user_list) 
-         for_each (jep, qstat_env->job_list) {
-            if (up && lGetString(up, ST_name) && 
-                  !fnmatch(lGetString(up, ST_name), 
-                              lGetString(jep, JB_owner), 0)) {
-               for_each (jatep, lGetList(jep, JB_ja_tasks)) {
-                  lSetUlong(jatep, JAT_suitable, 
-                     lGetUlong(jatep, JAT_suitable)|TAG_SHOW_IT|TAG_SELECT_IT);
+         for_each (jep, qstat_env->job_list)
+         {
+            if (up && lGetString(up, ST_name) && !fnmatch(lGetString(up, ST_name), lGetString(jep, JB_owner), FNM_NOESCAPE))
+            {
+               for_each (jatep, lGetList(jep, JB_ja_tasks))
+               {
+                  lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_SHOW_IT|TAG_SELECT_IT);
                }
             }
          }
@@ -839,19 +840,19 @@ int qstat_env_filter_queues( qstat_env_t *qstat_env, lList** filtered_queue_list
    DENTER(TOP_LAYER, "qstat_env_filter_queues");
 
    ret = filter_queues(NULL,
-                        qstat_env->queue_list,
-                        qstat_env->centry_list,
-                        qstat_env->hgrp_list,
-                        qstat_env->exechost_list,
-                        qstat_env->acl_list,
-                        qstat_env->project_list,
-                        qstat_env->pe_list,
-                        qstat_env->resource_list, 
-                        qstat_env->queueref_list, 
-                        qstat_env->peref_list, 
-                        qstat_env->queue_user_list,
-                        qstat_env->queue_state,
-                        alpp);
+                       qstat_env->queue_list,
+                       qstat_env->centry_list,
+                       qstat_env->hgrp_list,
+                       qstat_env->exechost_list,
+                       qstat_env->acl_list,
+                       qstat_env->project_list,
+                       qstat_env->pe_list,
+                       qstat_env->resource_list, 
+                       qstat_env->queueref_list, 
+                       qstat_env->peref_list, 
+                       qstat_env->queue_user_list,
+                       qstat_env->queue_state,
+                       alpp);
    DRETURN(ret);
 }
 

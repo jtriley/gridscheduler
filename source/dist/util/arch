@@ -106,7 +106,25 @@ CYGWIN*)
 Darwin)
    case $osmachine in
       i386)
-         darwin_machine=x86
+         case $osrelease in
+            8.*)
+               darwin_machine=x86
+               ;;
+            9.*|10.*)
+               cpuarch=`sysctl -n hw.cpu64bit_capable 2> /dev/null`
+               if [ "$cpuarch" = "0" ]; then
+                  darwin_machine=x86
+               else
+                  darwin_machine=x64
+               fi
+               ;;
+            *)
+               darwin_machine=unknown
+               ;;
+            esac
+         ;;
+      x86_64)
+         darwin_machine=x64
          ;;
       Power*)
          darwin_machine=ppc

@@ -1174,17 +1174,21 @@ int sge_add_group(gid_t add_grp_id, char *err_str)
    gid_t *list;
    int groups;
 
-   if(err_str != NULL) {
+   if (err_str != NULL)
+   {
       err_str[0] = 0;
    }
 
-   if (add_grp_id == 0) {
+   if (add_grp_id == 0)
+   {
       return 0;
    }
 
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
-   if (max_groups <= 0) {
-      if(err_str != NULL) {
+   if (max_groups <= 0)
+   {
+      if(err_str != NULL)
+      {
          sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), 
                  sge_u32c(geteuid()), MSG_SYSTEM_INVALID_NGROUPS_MAX);
       }
@@ -1200,46 +1204,67 @@ int sge_add_group(gid_t add_grp_id, char *err_str)
 #else
    list = (gid_t*) malloc(max_groups*sizeof(gid_t));
 #endif
-   if (list == NULL) {
-      if(err_str != NULL) {
+   if (list == NULL)
+   {
+      if (err_str != NULL)
+      {
          int error = errno;
-         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), 
-                 sge_u32c(geteuid()), strerror(error));
+         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()), strerror(error));
       }
       return -1;
    }
  
    groups = getgroups(max_groups, list);
-   if (groups == -1) {
-      if(err_str != NULL) {
+   if (groups == -1)
+   {
+      if (err_str != NULL)
+      {
          int error = errno;
-         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), 
-                 sge_u32c(geteuid()), strerror(error));
+         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()), strerror(error));
       }
       free(list);
       return -1;
    }   
 #if !defined(INTERIX)
-   if (groups < max_groups) {
+   if (groups < max_groups)
+   {
       list[groups] = add_grp_id;
       groups++;
       groups = setgroups(groups, list);
-      if (groups == -1) {
-         if(err_str != NULL) {
+      if (groups == -1)
+      {
+         if (err_str != NULL)
+         {
             int error = errno;
-            sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), 
-                    sge_u32c(geteuid()), strerror(error));
+            sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()), strerror(error));
          }
          free(list);
          return -1;
       }
-   } else {
-      if(err_str != NULL) {
-         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), 
-                 sge_u32c(geteuid()), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
+   }
+   else
+   {
+#if defined(DARWIN)
+      list[max_groups-1] = add_grp_id;
+
+      if (setgroups(max_groups, list) == -1)
+      {
+         if (err_str != NULL)
+         {
+            int error = errno;
+            sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()), strerror(error));
+         }
+         free(list);
+         return -1;
+      }
+#else
+      if (err_str != NULL)
+      {
+         sprintf(err_str, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, sge_u32c(getuid()), sge_u32c(geteuid()), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
       }
       free(list);
       return -1;
+#endif
    }                      
 #endif
    free(list);

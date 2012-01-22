@@ -1978,25 +1978,25 @@ GetSuitableJavaBin()
 GetDefaultJavaForPlatform()
 {
    case $SGE_ARCH in
-      sol-sparc64) 
+      sol-sparc64)
          java_homes="/usr/java
 /usr/jdk/latest"
          ;;
-      sol-amd64)   
+      sol-amd64)
          java_homes="/usr/java
 /usr/jdk/latest"
          ;;
-      sol-x86)     
+      sol-x86)
          java_homes="/usr/java
 /usr/jdk/latest"
          ;;
-      linux-x64)   
+      linux-x64)
          java_homes="/usr/java
 /usr/jdk/latest
 /usr/java/latest
 /etc/alternatives/jre"
          ;;
-      linux-x86)     
+      linux-x86)
          java_homes="/usr/java
 /usr/jdk/latest
 /usr/java/latest
@@ -2006,7 +2006,11 @@ GetDefaultJavaForPlatform()
          java_homes="/Library/Java/Home
 /System/Library/Frameworks/JavaVM.framework/Home"
          ;;
-      darwin-x86)  
+      darwin-x86)
+         java_homes="/Library/Java/Home
+/System/Library/Frameworks/JavaVM.framework/Home"
+         ;;
+      darwin-x64)
          java_homes="/Library/Java/Home
 /System/Library/Frameworks/JavaVM.framework/Home"
          ;;
@@ -2124,6 +2128,9 @@ GetJvmLibFromJavaHome() {
          suffix=../Libraries/libjvm.dylib
          ;;
       darwin-x86)  
+         suffix=../Libraries/libjvm.dylib
+         ;;
+      darwin-x64)
          suffix=../Libraries/libjvm.dylib
          ;;
    #TODO: Missing HP, AIX platforms

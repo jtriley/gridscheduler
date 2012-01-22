@@ -2075,7 +2075,7 @@ static void start_qlogin_job(const char *shell_path)
       my_env[i++] = strncat(hertz, getenv("HZ"), 10);
 
 
-#if defined(LINUX) || defined(DARWIN_PPC) || defined(DARWIN_X86)
+#if defined(LINUX) || defined(DARWIN)
    my_env[i++] = strcat(path, "/bin:/usr/bin");
 #else
    my_env[i++] = strcat(path, "/usr/bin");

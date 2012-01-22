@@ -374,7 +374,7 @@ if [ "$1" = "-m" -o "$1" = "-mt" -o "$1" = "-lib" ]; then
       DEFAULTMANPATH=/usr/share/catman:/usr/share/man:/usr/catman:/usr/man
       MANTYPE=catman
       ;;
-   lx*)
+   linux*)
       if [ "`which manpath 2>/dev/null`" != "" ]; then
          DEFAULTMANPATH=`manpath 2>/dev/null`
       else

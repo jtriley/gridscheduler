@@ -261,8 +261,9 @@ set PLPA             = 0
 set HWLOC            = 1
 set HWLOC_CFLAGS     = "-O2"
 set QTCSH            = 1
-set MAKEMTMALLOCLIB  = 1
 set MAKEJEMALLOCLIB  = 0
+set LINKJEMALLOCLIB  = 0
+set LINKMTMALLOCLIB  = 1
 set MAKESTRPTIME     = 0
 set MAKESNPRINTF     = 0
 set MAKEFNMATCH      = 0
@@ -429,6 +430,7 @@ set JUTI_OBJ      =
 switch ($BUILDARCH) 
    case LINUXX64:
      set MAKEJEMALLOCLIB  = 1
+     set LINKJEMALLOCLIB  = 1
      set WITH_GETTEXT = 1
      breaksw
    case LINUX*:
@@ -692,6 +694,7 @@ while ($#argv >= 1 && $?found)
       breaksw
    case "-no-jemalloc":
       set MAKEJEMALLOCLIB = 0
+      set LINKJEMALLOCLIB = 0
       breaksw
    case "-plpa":
       set PLPA = 1
@@ -705,7 +708,7 @@ while ($#argv >= 1 && $?found)
       set HWLOC = 0
       breaksw
    case "-no-mtmalloc":
-      set MAKEMTMALLOCLIB = 0
+      set LINKMTMALLOCLIB = 0
       breaksw
    case "-only-core":
       set CORE   = 1
@@ -734,7 +737,8 @@ while ($#argv >= 1 && $?found)
       set SGE_DEPEND = 1
       set MAKEWINGRIDAPP = 0
       set MAKEWINGRIDLIB = 0
-      set MAKEJEMALLOCLIB  = 0
+      set MAKEJEMALLOCLIB = 0
+      set LINKJEMALLOCLIB = 0
       set ONLY_PARAM_SPEC = 1
       breaksw
    case  "-only-java"
@@ -754,7 +758,8 @@ while ($#argv >= 1 && $?found)
       set QMON   = 0
       set QTCSH  = 0
       set REMOTE = 0
-      set MAKEJEMALLOCLIB  = 1
+      set MAKEJEMALLOCLIB = 1
+      set LINKJEMALLOCLIB = 1
       set MAKEWINGRIDAPP = 0
       set MAKEWINGRIDLIB = 0
       set ONLY_PARAM_SPEC = 1
@@ -943,6 +948,10 @@ while ($#argv >= 1 && $?found)
    case "-sunman":
       set SGE_PRODUCT_MODE=sge
       breaksw
+   case "-sys-jemalloc":
+      set MAKEJEMALLOCLIB = 0
+      set LINKJEMALLOCLIB = 1
+      breaksw
    case "-umap"
       set WITH_USERMAPPING = 1
       breaksw
@@ -957,6 +966,7 @@ while ($#argv >= 1 && $?found)
       breaksw
    case "-with-jemalloc"
       set MAKEJEMALLOCLIB = 1
+      set LINKJEMALLOCLIB = 1
       breaksw
    default:
       unset found
@@ -1258,9 +1268,9 @@ case FREEBSD_*:
    set CC       = gcc
    set CXX      = g++
    set DLLIB	 = ""
-   set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
    set PTHRDSFLAGS = "-D_REENTRANT -D__USE_REENTRANT"
    set CFLAGS   = "$OFLAG -Wall -DFREEBSD -D$BUILDARCH -DGETHOSTBYNAME_M -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS -I/usr/X11R6/include"
+   set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
    set NOERR_CFLAG = "-Wno-error"
    set LFLAGS   = "$DEBUG_FLAG $LFLAGS -export-dynamic"
    set LIBS     = "$LIBS -lkvm"
@@ -1289,9 +1299,9 @@ case NETBSD_*:
    set CC       = gcc
    set CXX      = g++
    set DLLIB    = ""
-   set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
    set PTHRDSFLAGS = "-D_REENTRANT -D__USE_REENTRANT"
    set CFLAGS   = "$OFLAG -Wall -DNETBSD -D$BUILDARCH -DGETHOSTBYNAME_M -DGETHOSTBYADDR_M $DEBUG_FLAG $CFLAGS -I/usr/X11R6/include"
+   set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
    set NOERR_CFLAG = "-Wno-error"
    set LFLAGS   = "$DEBUG_FLAG $LFLAGS -export-dynamic"
    set LIBS     = "$LIBS -lkvm"
@@ -1608,11 +1618,15 @@ case LINUXX64:
    if ( $COMPILE_ARCH == "ULINUX86" || $COMPILE_ARCH == "ULINUXX64" ) then
       echo "Ignore jemalloc for unsupported architectures!"
       set MAKEJEMALLOCLIB = 0
+      set LINKJEMALLOCLIB = 0
    endif
 
    if ( $MAKEJEMALLOCLIB == 1 ) then
-      set LIBRARY_LIBS = "$LIBS"
       set JEMALLOC_CFLAGS  = "-Wno-error -DMOZ_MEMORY_LINUX"
+   endif
+
+   if ( $LINKJEMALLOCLIB == 1) then
+      set LIBRARY_LIBS = "$LIBS"
       set LIBS = "-ljemalloc $LIBS"
    endif
 
@@ -2103,11 +2117,15 @@ case SOLARISAMD64:
 
    set LFLAGS   = "$LFLAGS $DEBUG_FLAG"
    set LIBRARY_LIBS = "$LIBS"
+
    if ( $MAKEJEMALLOCLIB == 1 ) then
       set JEMALLOC_CFLAGS  = "-DMOZ_MEMORY_SOLARIS -xc99"
+   endif
+
+   if ( $LINKJEMALLOCLIB == 1 ) then
       set LIBS = "-ljemalloc $LIBS"
    else
-      if ( $MAKEMTMALLOCLIB == 1 ) then
+      if ( $LINKMTMALLOCLIB == 1 ) then
          set LIBS = "-lmtmalloc $LIBS"
       endif
    endif

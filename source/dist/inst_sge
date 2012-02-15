@@ -142,7 +142,8 @@ while [ $ARGC != 0 ]; do
      if [ ! -f "$2" ]; then
         AUTO="false"
         $INFOTEXT "Error: File $FILE does not exist!" 
-        ErrUsage        
+        ErrUsage
+        exit 2
      fi
      shift
      ARGC=`expr $ARGC - 1`
@@ -1086,7 +1087,7 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       AddSubmitHostsExecd
       AddSGEStartUpScript $euid execd
       SetupWinSvc execinst     #service install during execd installation -> param: execinst
-      CopyIBMLoadSensor
+      # CopyIBMLoadSensor
       StartExecd
       AddQueue
       GiveHints
@@ -1122,7 +1123,7 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       AddLocalConfiguration_With_Qconf
       AddSGEStartUpScript $euid execd
       SetupWinSvc execinst  #service install during execd installation -> param: execinst
-      CopyIBMLoadSensor
+      # CopyIBMLoadSensor
       StartExecd
       AddQueue
       GiveHints

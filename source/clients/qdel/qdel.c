@@ -51,7 +51,7 @@
 #include "msg_clients_common.h"
 #include "msg_qdel.h"
 #include "sgeobj/msg_sgeobjlib.h"
-#include "sgeobj//sge_range.h"
+#include "sgeobj/sge_range.h"
 #include "sge_options.h"
 #include "sge_profiling.h"
 

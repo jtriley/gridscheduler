@@ -53,7 +53,7 @@
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
-#include "sgeobj//sge_range.h"
+#include "sgeobj/sge_range.h"
 #include "sge_options.h"
 #include "sge_profiling.h"
 #include "gdi/sge_gdi.h"

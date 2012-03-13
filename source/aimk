@@ -214,6 +214,8 @@ usage:
    echo "-spool-classic    -> use classic flatfile spooling"
    echo "-spool-targets    -> only create qmaster, spooldefaults and spoolinit"
    echo "-sunman           -> create man pages for Sun branded man pages (with -man[kv])"
+   echo "-sys-hwloc        -> use the hwloc library provided by the system"
+   echo "-sys-jemalloc     -> use the jemalloc library provided by the system"
    echo "-tight-ssh        -> compile SSH daemon with tight SGE integration"
    echo "-umap             -> compile with usermapping and hostgroup feature"
    echo "-werror           -> turn all compiler warnings into errors"
@@ -257,10 +259,11 @@ set CORE             = 1
 set REMOTE           = 1
 set QMAKE            = 1
 set QMAKELIB         = ""
+set QTCSH            = 1
 set PLPA             = 0
 set HWLOC            = 1
 set HWLOC_CFLAGS     = "-O2"
-set QTCSH            = 1
+set MAKEHWLOC        = 1
 set MAKEJEMALLOCLIB  = 0
 set LINKJEMALLOCLIB  = 0
 set LINKMTMALLOCLIB  = 1
@@ -286,7 +289,7 @@ set COMPILE_DC       = 0
 set CC               = cc
 set CXX              = CC
 set CFLAGS           = "-D$TARGET_BITS $INP_CFLAGS"
-set CORE_INCLUDE     = "-I../common -I../libs -I../libs/uti -I../libs/juti -I../libs/gdi -I../libs/japi -I../libs/sgeobj -I../libs/cull -I../libs/rmon -I../libs/comm -I../libs/comm/lists -I../libs/sched -I../libs/evc -I../libs/evm -I../libs/mir -I../libs/lck -I../daemons/common -I../daemons/qmaster -I../daemons/execd -I../daemons/schedd -I../clients/common -I."
+set CORE_INCLUDE     = "-I../common -I../libs -I../libs/uti -I../libs/juti -I../libs/gdi -I../libs/japi -I../libs/sgeobj -I../libs/cull -I../libs/rmon -I../libs/comm -I../libs/comm/lists -I../libs/sched -I../libs/evc -I../libs/evm -I../libs/mir -I../libs/lck -I../daemons/common -I../daemons/qmaster -I../daemons/execd -I../clients/common -I."
 set DEBUG_FLAG       = ""
 set INSURE_FLAG      = ""
 set JEMALLOC_CFLAGS  = ""
@@ -510,6 +513,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 0
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set QMON   = 0
       set QTCSH  = 0
       set REMOTE = 0
@@ -633,7 +637,7 @@ while ($#argv >= 1 && $?found)
       set BUILDMAN   = 1
       set KVMAN      = 1
       breaksw
-   case  "-mo"
+   case "-mo"
       echo "BUILDARCH=$BUILDARCH"
       if ( $BUILDARCH == sol-sparc || $BUILDARCH == sol-sparc64 ) then
          scripts/msgmerge.csh
@@ -648,16 +652,16 @@ while ($#argv >= 1 && $?found)
    case "-no-dump":
       set DUMP = 0
       breaksw
-   case  "-no-java"
+   case "-no-java"
       set JAVA = 0
       breaksw
-   case  "-no-gui-inst"
+   case "-no-gui-inst"
       set JAVA_GUI_INST = 0
       breaksw
-   case  "-no-jni"
+   case "-no-jni"
       set JNI = 0
       breaksw
-   case  "-no-intl"
+   case "-no-intl"
       set WITH_GETTEXT = 0
       breaksw
    case "-no-mk":
@@ -699,13 +703,16 @@ while ($#argv >= 1 && $?found)
    case "-plpa":
       set PLPA = 1
       set HWLOC = 0
+      set MAKEHWLOC = 0
       breaksw
    case "-solaris-pset":
       set SOLARISPSET = 1
       set HWLOC = 0
+      set MAKEHWLOC = 0
       breaksw
    case "-no-hwloc":
       set HWLOC = 0
+      set MAKEHWLOC = 0
       breaksw
    case "-no-mtmalloc":
       set LINKMTMALLOCLIB = 0
@@ -717,6 +724,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 0
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set QMON   = 0
       set QTCSH  = 0
       set REMOTE = 0
@@ -731,6 +739,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE      = 0
       set PLPA       = 0
       set HWLOC      = 0
+      set MAKEHWLOC  = 0
       set QMON       = 0
       set QTCSH      = 0
       set REMOTE     = 0
@@ -741,11 +750,11 @@ while ($#argv >= 1 && $?found)
       set LINKJEMALLOCLIB = 0
       set ONLY_PARAM_SPEC = 1
       breaksw
-   case  "-only-java"
+   case "-only-java"
       set JAVA = 2
       set ONLY_PARAM_SPEC = 1
       breaksw
-   case  "-only-gui-inst"
+   case "-only-gui-inst"
       set JAVA_GUI_INST = 2
       set ONLY_PARAM_SPEC = 1
       breaksw
@@ -771,6 +780,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 1
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set QMON   = 0
       set QTCSH  = 0
       set REMOTE = 0
@@ -781,6 +791,7 @@ while ($#argv >= 1 && $?found)
    case "-only-plpa":
       set PLPA   = 1
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set CORE   = 0
       set JAVA   = 0
       set JAVA_GUI_INST = 0
@@ -799,6 +810,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 0
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set QMON   = 1
       set QTCSH  = 0
       set REMOTE = 0
@@ -813,6 +825,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 0
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
 
       set QMON   = 0
       set QTCSH  = 1
@@ -828,6 +841,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 0
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set QMON   = 0
       set QTCSH  = 0
       set REMOTE = 0
@@ -842,6 +856,7 @@ while ($#argv >= 1 && $?found)
       set QMAKE  = 0
       set PLPA   = 0
       set HWLOC  = 0
+      set MAKEHWLOC = 0
       set QMON   = 0
       set QTCSH  = 0
       set REMOTE = 1
@@ -860,7 +875,7 @@ while ($#argv >= 1 && $?found)
       set PERLGUI = "perlgui_all"
       set PERLGUI_CLEAN = "perlgui_clean"
       breaksw
-   case  "-po"
+   case "-po"
       if ( $buildarch == linux-x86 ) then
          scripts/msgmerge.csh merge
          echo ""
@@ -872,7 +887,7 @@ while ($#argv >= 1 && $?found)
       endif
       exit 0
       breaksw
-   case  "-pot"
+   case "-pot"
       if ( $buildarch != linux-x86 ) then
          echo "Must be done on linux-86 architecture"
          exit 1
@@ -949,8 +964,10 @@ while ($#argv >= 1 && $?found)
       set SGE_PRODUCT_MODE=sge
       breaksw
    case "-sys-jemalloc":
-      set MAKEJEMALLOCLIB = 0
-      set LINKJEMALLOCLIB = 1
+      setenv SGE_SYSJEMALLOC "SGE_SYSJEMALLOC"
+      breaksw
+   case "-sys-hwloc":
+      setenv SGE_SYSHWLOC "SGE_SYSHWLOC"
       breaksw
    case "-umap"
       set WITH_USERMAPPING = 1
@@ -983,6 +1000,16 @@ end
 if ( $DEBUGGED && $USE_QMAKE ) then
    set MAKEOPT = "-verbose $MAKEOPT"
 endif
+
+if ( $?SGE_SYSJEMALLOC ) then
+   set MAKEJEMALLOCLIB = 0
+   set LINKJEMALLOCLIB = 1
+endif
+
+if ( $?SGE_SYSHWLOC ) then
+   set MAKEHWLOC = 0
+endif
+
 
 set CFLAGS = "$CFLAGS -DSPOOLING_$SPOOLING_METHOD $SECFLAGS"
 
@@ -1050,7 +1077,7 @@ endif
 
 switch ($BUILDARCH)
 case AIX43:
-case AIX51:
+case AIX:
    set MAKEWINGRIDLIB   = 0
    set MAKEWINGRIDAPP   = 0
    set COMPILE_DC = 1
@@ -1064,11 +1091,13 @@ case AIX51:
    if ( $DEBUGGED == 1 ) then
       set DEBUG_FLAG = "$DEBUG_FLAG -qinitauto=01 -qro -qroconst"
    endif
+
    if ( $OPTIMIZATION == 1 ) then
       set OFLAG = "-O3 -qstrict -qmaxmem=8192"
    else
       set OFLAG    = "-qmaxmem=8192"
    endif
+
    set CC       = xlc_r
    set CXX      = xlC_r
    set CFLAGS   = "$OFLAG -DAIX -D$BUILDARCH -D_LARGE_FILES -DUSE_STDARG -DUSE_SGE_UNSETENV -DGETHOSTBYADDR_R5 -DGETHOSTBYNAME_R3 $DEBUG_FLAG $CFLAGS -bnoquiet"
@@ -1082,6 +1111,7 @@ case AIX51:
 
    if ("$PERFSTAT" == 1) then
       set CFLAGS = "$CFLAGS -DHAS_AIX_PERFLIB"
+      set LFLAGS = "$LFLAGS -lperfstat"
    endif
 
    if ("$WERR" == 1) then
@@ -1154,6 +1184,7 @@ case DARWIN_PPC:
    set MAKEWINGRIDAPP   = 0
    set COMPILE_DC = 1
    set HWLOC      = 0
+   set MAKEHWLOC  = 0
 
    if ( $OPTIMIZATION == 1 ) then
       set OFLAG = "-O3"
@@ -1205,7 +1236,7 @@ case DARWIN_PPC:
    endsw
 
    if ("$WERR" == 1) then
-      set CFLAGS = "$CFLAGS -Werror"
+      set CFLAGS = "$CFLAGS -Werror -Wextra"
    endif
 
    if ("$STACKPROTECT" == 1) then
@@ -1456,19 +1487,7 @@ case HP1164:
    breaksw
    
 case ALINUX:
-case LINUXARM:
-case LINUXARM64:
-case LINUXIA64:
-case LINUXMIPS:
-case LINUXMIPS64:
-case LINUXPPC:
-case LINUXPPC64:
-case LINUXS390:
-case LINUXS390X:
-case LINUXSPARC:
-case LINUXSPARC64:
-case LINUX86:
-case LINUXX64:
+case LINUX*:
    set MAKEWINGRIDLIB   = 0
    set MAKEWINGRIDAPP   = 0
    set AUTHLIBS = "-lcrypt -lpam"
@@ -1532,12 +1551,12 @@ case LINUXX64:
       endif
    endif
 
-   set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
+#   set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
 
    set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DLINUX_NATIVE -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
 
    if ("$WERR" == 1) then
-      set CFLAGS = "$CFLAGS -Werror"
+      set CFLAGS = "$CFLAGS -Werror -Wextra"
    endif
 
    if ("$STACKPROTECT" == 1) then
@@ -1547,9 +1566,11 @@ case LINUXX64:
    if ("$ADOC" == 1) then
       set CFLAGS = "$CFLAGS -Wno-error"
    endif
+
    if ( $TARGET_BITS == TARGET_32BIT ) then
       set CFLAGS = "$CFLAGS -D_FILE_OFFSET_BITS=64"
    endif
+
    set LFLAGS   = "$DEBUG_FLAG $LFLAGS"
 
    set SHAREDLD = $CC
@@ -1665,7 +1686,7 @@ case CYGWIN_X86:
    set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DCYGWIN -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME -DGETHOSTBYADDR -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
 
    if ("$WERR" == 1) then
-      set CFLAGS = "$CFLAGS -Werror"
+      set CFLAGS = "$CFLAGS -Werror -Wextra"
    endif
 
    if ("$STACKPROTECT" == 1) then
@@ -1738,6 +1759,7 @@ case WIN32_X86:
    set WITH_USERMAPPING = 0 # Compile without usermapping feature
    set COMPILE_DC       = 1
    set HWLOC            = 0
+   set MAKEHWLOC        = 0
    set AUTHLIBS         = ""
    set JUTI_ALL         = ""
    set JUTI_DEPEND      = ""
@@ -1776,7 +1798,7 @@ case WIN32_X86:
       #set LFLAGS = "-Wl,-EL,-b=pe-i1386 $LFLAGS"
 
       if ("$WERR" == 1) then
-        set CFLAGS = "$CFLAGS -Werror"
+        set CFLAGS = "$CFLAGS -Werror -Wextra"
       endif
    else
       set CC  = cc
@@ -2031,13 +2053,12 @@ case SOLARISAMD64:
       endif
       set CFLAGS = "-Xc -v $OFLAG $MEMFLAG -ftrap=division $CFLAGS $DEBUG_FLAG"
    else if ( $CC == gcc) then
-      #set CFLAGS = "-Wall -Werror -Wstrict-prototypes $CFLAGS"
       set CFLAGS = "-Wall -Wstrict-prototypes $CFLAGS"
       set SHARED_CFLAGS = "-fPIC"
       set SHARED_LFLAGS = "$SHARED_LFLAGS -L. -shared"
 
       if ("$WERR" == 1) then
-        set CFLAGS = "$CFLAGS -Werror"
+        set CFLAGS = "$CFLAGS -Werror -Wextra"
       endif
 
       if ( $BUILDARCH == SOLARIS64 ) then
@@ -2261,7 +2282,7 @@ if ( $JNI == 1 ) then
    #
    # special treatment
    #
-   if ( $buildarch == aix51 ) then
+   if ( $buildarch == aix ) then
      set JAVA_LFLAGS="-L$JAVA_HOME/jre/bin/classic"
    else if ( $buildarch == darwin-x86 || $buildarch == darwin-x64 || $buildarch == darwin-ppc ) then
      set JAVA_LFLAGS="-L$JAVA_HOME/../Libraries"
@@ -2281,19 +2302,6 @@ if ($JAVA_SHAREDEXT == "") then
 endif
 
 set MAKEOPT = "$MAKEOPT $PARALLEL"
-
-# set gcc version dependent defines, suppress gcc 3.3.x warnings
-#
-if ($CC == gcc) then
-   expr `gcc -dumpversion` : 3.3 > /dev/null
-   if ($status == 0) then
-      set CFLAGS = "$CFLAGS"
-   endif
-   expr `gcc -dumpversion` : 2.96 > /dev/null
-   if ($status == 0) then
-      set CFLAGS = "-DUSING_GCC_2_96 $CFLAGS"
-   endif
-endif
 
 # pass -DCOMPILE_DC define to compile where PTF and PDC are ported
 #
@@ -2348,11 +2356,15 @@ endif
 
 if ( $HWLOC == 1 ) then
    set CFLAGS = "$CFLAGS -DTHREADBINDING -DHWLOC"
-   set CORE_INCLUDE = "$CORE_INCLUDE -I$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/include/ -I$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/include"
-   # set LFLAGS = "$LFLAGS -L$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/src/.libs/"
-   # set LIBS = "$LIBS -lhwloc"
-   set LIBS = "-L$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/src/.libs/ -lhwloc $LIBS"
+
+   if ( $MAKEHWLOC == 1 ) then
+      set CORE_INCLUDE = "$CORE_INCLUDE -I$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/include/ -I$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/include"
+      set LIBS = "-L$SOURCE/3rdparty/hwloc/$HWLOC_DIRECTORY/$COMPILE_ARCH/src/.libs/ -lhwloc $LIBS"
+   else
+      set LIBS = "-lhwloc $LIBS"
+   endif
 endif
+
 
 
 # create shared lib from LGPL code  - use $SHAREDEXT for shared lib extension
@@ -2546,7 +2558,8 @@ if ( "$argv" == "depend" ) then
 
    if ( "$HWLOC" == 1 ) then
       echo "No dependencies for 3rd_party hwloc ... skipping"
-      set HWLOC = 0
+      set HWLOC     = 0
+      set MAKEHWLOC = 0
    endif
 
    if ( "$QMAKE" == 1 ) then
@@ -2683,7 +2696,7 @@ if ( "$PLPA" == 1 ) then
    cd $SOURCE
 endif
 
-if ( "$HWLOC" == 1 ) then
+if ( "$MAKEHWLOC" == 1 ) then
    echo _________3_r_d_p_a_r_t_y__H_W_L_O_C_______
 
       set maj_ver = `echo $HWLOC_VERSION| cut -f 1 -d .`

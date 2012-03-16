@@ -216,6 +216,7 @@ usage:
    echo "-sunman           -> create man pages for Sun branded man pages (with -man[kv])"
    echo "-sys-hwloc        -> use the hwloc library provided by the system"
    echo "-sys-jemalloc     -> use the jemalloc library provided by the system"
+   echo "-sys-libssl       -> use the ssl library provided by the system"
    echo "-tight-ssh        -> compile SSH daemon with tight SGE integration"
    echo "-umap             -> compile with usermapping and hostgroup feature"
    echo "-werror           -> turn all compiler warnings into errors"
@@ -968,6 +969,11 @@ while ($#argv >= 1 && $?found)
       breaksw
    case "-sys-hwloc":
       setenv SGE_SYSHWLOC "SGE_SYSHWLOC"
+      breaksw
+   case "-sys-libssl":
+      set SECFLAGS="-DSECURE"
+      set SECLIBS_STATIC="-lssl -lcrypto"
+      set KLFLAGS=""
       breaksw
    case "-umap"
       set WITH_USERMAPPING = 1

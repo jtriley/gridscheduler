@@ -72,13 +72,13 @@
 #include <security/pam_appl.h>
 #endif
 
-#if defined(DARWIN) || defined(AIX51) || defined(AIX43) || defined(INTERIX) || defined(FREEBSD) || defined(ALPHA5) || defined(WINDOWS) || defined(NETBSD)
+#if defined(DARWIN) || defined(AIX) || defined(INTERIX) || defined(FREEBSD) || defined(ALPHA5) || defined(WINDOWS) || defined(NETBSD)
 #define JUTI_NO_SHADOW
 #else
 #include <shadow.h>
 #endif
 
-#if defined(AIX51) || defined(AIX43)
+#if defined(AIX)
 #include <userpw.h>
 #endif
 
@@ -595,7 +595,7 @@ static int login_conv(int num_msg, const struct pam_message **msgm,
 static auth_result_t get_crypted_password(const char* username, char* buffer, size_t size,
                                 error_handler_t *error_handler) {
                      
-#if defined(AIX43) || defined(AIX51)
+#if defined(AIX)
 #define BUFSIZE 1024
    char buf[BUFSIZE];
    struct userpw *pw = NULL;

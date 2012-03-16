@@ -65,7 +65,7 @@ int dont_free = 0;
 # define realloc	frealloc
 #endif /* WINNT */
 
-#if defined(AIX51) || defined(AIX43)
+#if defined(AIX)
 #define SYSMALLOC
 #endif
 

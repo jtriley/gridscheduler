@@ -132,7 +132,7 @@ int ptym_open(char *pts_name)
 {
    char *ptr;
    int  fdm;
-#if defined(AIX43) || defined(AIX51)
+#if defined(AIX)
    char default_pts_name[] = "/dev/ptc";
 #else
    char default_pts_name[] = "/dev/ptmx";

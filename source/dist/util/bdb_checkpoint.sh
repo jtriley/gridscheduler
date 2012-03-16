@@ -78,8 +78,11 @@ SGE_ARCH=`${SGE_ROOT}/util/arch`
 # source settings, we need LD_LIBRARY_PATH/LIBPATH/SHLIB_PATH
 . ${SGE_ROOT}/${SGE_CELL}/common/settings.sh
 
+# set PATH
+PATH=${SGE_ROOT}/utilbin/${SGE_ARCH}:$PATH
+
 # checkpoint transaction log
-result=`${SGE_ROOT}/utilbin/${SGE_ARCH}/db_checkpoint -1 -h ${BDB_HOME} 2>&1`
+result=`db_checkpoint -1 -h ${BDB_HOME} 2>&1`
 if [ $? -ne 0 ]; then
    echo "error checkpointing transaction log:" >&2
    echo $result >&2
@@ -87,7 +90,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # retrieve no longer needed transaction logs
-logs=`${SGE_ROOT}/utilbin/${SGE_ARCH}/db_archive -h ${BDB_HOME} 2>&1`
+logs=`db_archive -h ${BDB_HOME} 2>&1`
 if [ $? -ne 0 ]; then
    echo "error retrieving outdated transaction logs:" >&2
    echo $logs >&2

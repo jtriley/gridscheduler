@@ -97,10 +97,18 @@
 #include "sge_os.h"
 
 #if (OPENSSL_VERSION_NUMBER < 0x0090700fL) 
-#define OPENSSL_CONST
-#define NID_userId NID_uniqueIdentifier
+ #define OPENSSL_CONST
+ #define NID_userId NID_uniqueIdentifier
 #else
-#define OPENSSL_CONST const
+ #define OPENSSL_CONST const
+#endif
+
+/* ugly workaround for extremely ugly usage of OpenSSL API */
+#if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
+ #define STACK       _STACK
+ #define SKVAL_RET_T char*
+#else
+ #define SKVAL_RET_T void*
 #endif
 
 
@@ -236,7 +244,7 @@ static int                  (*cl_com_ssl_func__SSL_get_ex_data_X509_STORE_CTX_id
 static void*                (*cl_com_ssl_func__SSL_CTX_get_ex_data)                 (SSL_CTX *ssl,int idx);
 static int                  (*cl_com_ssl_func__SSL_CTX_set_ex_data)                 (SSL_CTX *ssl,int idx,void *data);
 static int                  (*cl_com_ssl_func__sk_num)                              (const STACK *);
-static char*                (*cl_com_ssl_func__sk_value)                            (const STACK *, int);
+static SKVAL_RET_T          (*cl_com_ssl_func__sk_value)                            (const STACK *, int);
 static int                  (*cl_com_ssl_func__X509_STORE_get_by_subject)           (X509_STORE_CTX *vs,int type,X509_NAME *name, X509_OBJECT *ret);
 static void                 (*cl_com_ssl_func__EVP_PKEY_free)                       (EVP_PKEY *pkey);
 static void                 (*cl_com_ssl_func__X509_STORE_CTX_set_error)            (X509_STORE_CTX *ctx,int s);
@@ -1707,7 +1715,7 @@ static int cl_com_ssl_build_symbol_table(void) {
       }
 
       func_name = "sk_value";
-      cl_com_ssl_func__sk_value = (char* (*)(const STACK *, int))dlsym(cl_com_ssl_crypto_handle, func_name);
+      cl_com_ssl_func__sk_value = (SKVAL_RET_T (*)(const STACK *, int))dlsym(cl_com_ssl_crypto_handle, func_name);
       if (cl_com_ssl_func__sk_value == NULL) {
          CL_LOG_STR(CL_LOG_ERROR,"dlsym error: can't get function address:", func_name);
          had_errors++;

@@ -926,14 +926,6 @@ while ($#argv >= 1 && $?found)
       breaksw
    case "-plpa" 
       breaksw
-   case "-secure"
-      echo "___________W_A_R_N_I_N_G_____________"
-      echo "The -secure option is no longer supported as security is now enabled"
-      echo "by default.  Please remove the -secure option from your aimk.site and"
-      echo "aimk.private files.  To disable security, you may use the -no-secure"
-      echo "option."
-      echo
-      breaksw
    case "-shared-libs":
       set SHAREDLIBS = 1
       breaksw
@@ -1067,21 +1059,6 @@ if ( "$COMPILE_DIR" != "" ) then
    endif
 endif
 
-#---------------------------------------------------------------------------
-if ( $JAVA > 0 || $BUILDJAVADOC == 1 || $JNI == 1 ) then
-   # Make sure we can find JAVA_HOME
-   if ( ${?JAVA_HOME} == 0 ) then
-      echo "Please set JAVA_HOME"
-      exit 1
-   endif
-   if ( ${JAVA_HOME} == "/usr" ) then
-      echo 'Warning:'
-      echo 'Setting $JAVA_HOME to "/usr" causes problems on some systems, '
-      echo 'because the associated include path will be "/usr/include", '
-      echo 'which is a reserved system include path.'
-      echo
-   endif
-endif
 
 switch ($BUILDARCH)
 case AIX43:
@@ -1332,6 +1309,10 @@ case NETBSD_*:
    set MAKEWINGRIDLIB   = 0
    set MAKEWINGRIDAPP   = 0
    set COMPILE_DC = 1
+
+   set HWLOC      = 0
+   set MAKEHWLOC  = 0
+
    set MAKE = gmake
    set OFLAG = "-O"
    set ARFLAGS  = rcv
@@ -1378,6 +1359,9 @@ case IRIX65:
 
    set COMPILE_DC = 1
    set MAKE = gmake
+
+   set HWLOC      = 0
+   set MAKEHWLOC  = 0
 
    set CFLAGS   = "$OFLAG -Werror -woff 1035,3201,3496 -n32 -mips3 -mp -DFD_SETSIZE=8192 -DIRIX -D$BUILDARCH -DGETHOSTBYNAME_M -DGETHOSTBYADDR_M $DEBUG_FLAG -DUSE_SGE_UNSETENV $CFLAGS"
    set NOERR_CFLAG = "-woff 47,1110,1174,1209"
@@ -1674,6 +1658,9 @@ case CYGWIN_X86:
       set OFLAG = ""
    endif
 
+   set HWLOC      = 0
+   set MAKEHWLOC  = 0
+
    set CC  = gcc
    set CXX = g++
 
@@ -1887,6 +1874,10 @@ case NECSX4:
 #
    set INTERACTTARGETS = ""
    set COMPILE_DC = 1
+
+   set HWLOC      = 0
+   set MAKEHWLOC  = 0
+
    set MAKE = make
    set CFLAGS = "-DNECSX4 -DGETHOSTBYNAME_M -DGETHOSTBYADDR_M -dir,novec,nopar,nopthr -hfloat0 $DEBUG_FLAG $CFLAGS"
    set DEPEND_FLAGS = "$CFLAGS $XMTINCD"
@@ -1908,6 +1899,10 @@ case NECSX5:
    set MAKEWINGRIDAPP   = 0
    set INTERACTTARGETS = ""
    set COMPILE_DC = 1
+
+   set HWLOC      = 0
+   set MAKEHWLOC  = 0
+
    if ( $CORE == 1 ) then
       set MAKESTRPTIME = 1
       set MAKEFNMATCH = 1
@@ -2165,6 +2160,10 @@ case UNICOS*:
    set MAKEWINGRIDLIB   = 0
    set MAKEWINGRIDAPP   = 0
    set INTERACTTARGETS = ""
+
+   set HWLOC      = 0
+   set MAKEHWLOC  = 0
+
    set MAKE = gmake
    set ARFLAGS = rcv
    switch ($BUILDARCH)
@@ -2218,11 +2217,54 @@ set ARCH_STRING  = SGE_ARCH_STRING='\"'${buildarch}'\"'
 set CFLAGS       = "-D$ARCH_STRING $CFLAGS"
 set DEPEND_FLAGS = "-D$ARCH_STRING $DEPEND_FLAGS"
 
+#---------------------------------------------------------------------------
+if ( $JAVA > 0 || $BUILDJAVADOC == 1 || $JNI == 1 ) then
+
+   # Make sure we can find JAVA_HOME
+   if ( ${?JAVA_HOME} == 0 ) then
+      echo "Please set JAVA_HOME or disable Java & JGDI support"
+      echo "with aimk flags: -no-java -no-jni"
+      exit 1
+   endif
+
+   if ( ${JAVA_HOME} == "/usr" ) then
+      echo 'WARNING:'
+      echo 'Setting $JAVA_HOME to "/usr" causes problems on some systems, '
+      echo 'because the associated include path will be "/usr/include", '
+      echo 'which is a reserved system include path.'
+      echo
+      echo 'Please either set $JAVA_HOME correctly or disable Java & JGDI support'
+      echo 'with aimk flags: -no-java -no-jni'
+      echo
+      echo 'Contining without Java & JGDI support'
+      echo
+
+      if ( ${?JAVA_HOME_SET_BY_SGE} ) then
+         unsetenv JAVA_HOME
+      endif
+
+      set JNI = 0
+      set JAVA = 0
+   endif
+endif
+
 if ( $JNI == 1 ) then
-   set CORE_INCLUDE = "$CORE_INCLUDE -I${JAVA_HOME}/${JAVA_INCL}"
+
+   set JAVA_INCL_DIR = "${JAVA_HOME}/${JAVA_INCL}"
+
+   if ( ! -d "$JAVA_INCL_DIR" ) then
+      echo 'WARNING:'
+      echo 'Java include directory not found.'
+      echo
+      echo 'Please either set $JAVA_HOME correctly or disable Java & JGDI support'
+      echo 'with aimk flags: -no-java -no-jni'
+      exit 1
+   else
+      set CORE_INCLUDE = "$CORE_INCLUDE -I${JAVA_INCL_DIR}"
+   endif
 
    if ("$JAVA_ARCH" != "") then
-      set CORE_INCLUDE = "$CORE_INCLUDE -I${JAVA_HOME}/${JAVA_INCL}/${JAVA_ARCH}"
+      set CORE_INCLUDE = "$CORE_INCLUDE -I${JAVA_INCL_DIR}/${JAVA_ARCH}"
       switch ($buildarch)
          case linux-x86:
          case nbsd-i386:
@@ -2274,7 +2316,7 @@ if ( $JNI == 1 ) then
          case tru64:
              set JAVA_LIB_ARCH = "" 
              breaksw
-         case aix5:
+         case aix:
              set JAVA_LIB_ARCH = "" 
              breaksw
          default:

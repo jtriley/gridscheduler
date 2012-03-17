@@ -53,8 +53,8 @@ switch($buildarch)
    case "irix65":
    case "hp11":
    case "hp11-64":
-   case "lx24-ia64":
-   case "aix51":
+   case "linux-ia64":
+   case "aix":
       if ( -f /vol2/resources/en_jdk14 ) then
          source /vol2/resources/en_jdk14 
       endif   
@@ -147,7 +147,7 @@ switch ($BUILDARCH)
       # for HP11.00 we don't have dynamic loading of shared libraries
       # build with berkeleydb
    case "AIX43":
-   case "AIX51":
+   case "AIX":
    case "IRIX65":
       # for these platforms, reverse resolving of global symbols doesn't
       # work as expected: Instead of reverse resolving global symbols
@@ -158,17 +158,49 @@ switch ($BUILDARCH)
 endsw
 
 if ( ! $?JAVA_HOME ) then
-   set JAVA_BIN = `which \java`
 
-   if ( -e "$JAVA_BIN" ) then
-      set JAVAV = `$JAVA_BIN -version |& head -1`
-      set JAVAV = `expr "$JAVAV" : 'java version "1\.\([0-9]\).*"'`
+   set JAVAC_BIN = `which \javac`
 
-      if ( $JAVAV >= 4 ) then
-         setenv JAVA_HOME `expr //$JAVA_BIN : '//\(.*\)/bin/.*'`
+   set JAVAC_LOCATION = $JAVAC_BIN
+   while ( { test -L "$JAVAC_LOCATION" }  )
+       set JAVAC_LOCATION = `readlink $JAVAC_LOCATION`
+       if ( $status != 0 ) then
+          break
+       endif
+   end
+
+   if ( -e "$JAVAC_LOCATION" ) then
+      set JAVAC_BIN = $JAVAC_LOCATION
+   endif
+
+   if ( -e "$JAVAC_BIN" ) then
+      set JAVAV = `$JAVAC_BIN -version >& /dev/null`
+      if ( $status == 0 ) then
+         set JAVAV = `$JAVAC_BIN -version |& head -1`
+         set JAVAV = `expr "$JAVAV" : 'javac 1\.\([0-9]\).*'`
+
+         if ( $JAVAV >= 4 ) then
+            set JAVA_HOME_LOCATION = `expr //$JAVAC_BIN : '//\(.*\)/bin/.*'`
+
+            if ( ! -d  "$JAVA_HOME_LOCATION" ) then
+               set JAVA_HOME_LOCATION = `expr //$JAVAC_BIN : '//\(.*\)/Commands/.*'`
+            endif
+         endif
+      else
+         set JAVA_HOME_LOCATION = `expr //$JAVAC_BIN : '//\(.*\)/bin/.*'`
+
+         if ( ! -d  "$JAVA_HOME_LOCATION" ) then
+            set JAVA_HOME_LOCATION = `expr //$JAVAC_BIN : '//\(.*\)/Commands/.*'`
+         endif
+      endif
+
+      if ( -d "$JAVA_HOME_LOCATION" ) then
+         setenv JAVA_HOME            $JAVA_HOME_LOCATION
+         setenv JAVA_HOME_SET_BY_SGE TRUE
       endif
    endif
 endif
+
 
 # set junit jar file
 # set JUNIT_JAR = '/vol2/tools/SW/java/junit3.8.1/junit.jar'

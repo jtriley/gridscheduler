@@ -58,6 +58,7 @@ set ERR_WARN_ALL = ""
 set UNMODIFIED_ARGUMENTS = ( $argv )
 set FORCE_32BIT = 0
 set WERR        = 0
+set WEXTRA      = 0
 set STACKPROTECT = 0
 
 if ( -f dist/util/arch ) then
@@ -217,6 +218,7 @@ usage:
    echo " -tight-ssh        -> compile SSH daemon with tight SGE integration"
    echo " -umap             -> compile with usermapping and hostgroup feature"
    echo " -werror           -> turn all compiler warnings into errors"
+   echo " -wextra           -> turn on extra compiler warnings"
    echo " -with-jemalloc    -> build SGE with the jemalloc library"
    echo ""
    echo "Linking against system libraries"
@@ -978,6 +980,9 @@ while ($#argv >= 1 && $?found)
    case "-werror":
       set WERR = 1
       breaksw
+   case "-wextra":
+      set WEXTRA = 1
+      breaksw
    case "-stackprotect":
       set STACKPROTECT = 1
       breaksw
@@ -1221,7 +1226,11 @@ case DARWIN_PPC:
    endsw
 
    if ("$WERR" == 1) then
-      set CFLAGS = "$CFLAGS -Werror -Wextra"
+      set CFLAGS = "$CFLAGS -Werror"
+   endif
+
+   if ("$WEXTRA" == 1) then
+      set CFLAGS = "$CFLAGS -Wextra"
    endif
 
    if ("$STACKPROTECT" == 1) then
@@ -1548,7 +1557,11 @@ case LINUX*:
    set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DLINUX_NATIVE -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
 
    if ("$WERR" == 1) then
-      set CFLAGS = "$CFLAGS -Werror -Wextra"
+      set CFLAGS = "$CFLAGS -Werror"
+   endif
+
+   if ("$WEXTRA" == 1) then
+      set CFLAGS = "$CFLAGS -Wextra"
    endif
 
    if ("$STACKPROTECT" == 1) then
@@ -1681,7 +1694,11 @@ case CYGWIN_X86:
    set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DOGLIBC_LINUX -DCYGWIN -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME -DGETHOSTBYADDR -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
 
    if ("$WERR" == 1) then
-      set CFLAGS = "$CFLAGS -Werror -Wextra"
+      set CFLAGS = "$CFLAGS -Werror"
+   endif
+
+   if ("$WEXTRA" == 1) then
+      set CFLAGS = "$CFLAGS -Wextra"
    endif
 
    if ("$STACKPROTECT" == 1) then
@@ -1793,7 +1810,11 @@ case WIN32_X86:
       #set LFLAGS = "-Wl,-EL,-b=pe-i1386 $LFLAGS"
 
       if ("$WERR" == 1) then
-        set CFLAGS = "$CFLAGS -Werror -Wextra"
+        set CFLAGS = "$CFLAGS -Werror"
+      endif
+
+      if ("$WEXTRA" == 1) then
+        set CFLAGS = "$CFLAGS -Wextra"
       endif
    else
       set CC  = cc
@@ -2061,7 +2082,11 @@ case SOLARISAMD64:
       set SHARED_LFLAGS = "$SHARED_LFLAGS -L. -shared"
 
       if ("$WERR" == 1) then
-        set CFLAGS = "$CFLAGS -Werror -Wextra"
+        set CFLAGS = "$CFLAGS -Werror"
+      endif
+
+      if ("$WEXTRA" == 1) then
+        set CFLAGS = "$CFLAGS -Wextra"
       endif
 
       if ( $BUILDARCH == SOLARIS64 ) then

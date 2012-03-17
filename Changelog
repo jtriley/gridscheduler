@@ -5,6 +5,8 @@
 ################################################################################
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+RH-2012-03-17-1:  Enhancem.   Break warn extra error into a separate flag
+
 RH-2012-03-17-0:  Enhancem.   More aimk improvements
 
 RH-2012-03-16-3:  Enhancem.   improve sys #ifdef

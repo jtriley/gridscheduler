@@ -33,6 +33,8 @@
 #
 #  All Rights Reserved.
 #
+#  Copyright: 2012 by Open Grid Scheduler
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -369,16 +371,11 @@ CheckPath()
 #
 CheckBinaries()
 {
-
-   BINFILES="sge_coshepherd \
-             sge_execd sge_qmaster  \
-             sge_shadowd \
-             sge_shepherd qacct qalter qconf qdel qhold \
+   BINFILES="qacct qalter qconf qdel qhold \
              qhost qlogin qmake qmod qmon qresub qrls qrsh qselect qsh \
              qstat qsub qtcsh qping qquota sgepasswd"
 
-   WINBINFILES="sge_coshepherd sge_execd sge_shepherd  \
-                qacct qalter qconf qdel qhold qhost qlogin \
+   WINBINFILES="qacct qalter qconf qdel qhold qhost qlogin \
                 qmake qmod qresub qrls qrsh qselect qsh \
                 qstat qsub qtcsh qping qquota qloadsensor.exe"
 
@@ -398,6 +395,18 @@ CheckBinaries()
    if [ "$SGE_ARCH" = "win32-x86" ]; then
       BINFILES="$WINBINFILES"
       UTILFILES="$WINUTILFILES"
+   fi
+
+   if [ "$EXECD" = "install" ]; then
+      BINFILES="$BINFILES sge_execd sge_shepherd sge_coshepherd"
+   fi
+
+   if [ "$QMASTER" = "install" ]; then
+      BINFILES="$BINFILES sge_qmaster"
+   fi
+
+   if [ "$SHADOW" = "install" ]; then
+      BINFILES="$BINFILES sge_shadowd"
    fi
 
    missing=false

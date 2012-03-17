@@ -32,6 +32,8 @@
 #
 #  All Rights Reserved.
 #
+#  Copyright: 2012 by Open Grid Scheduler
+#
 ##########################################################################
 #___INFO__MARK_END__
 #
@@ -123,7 +125,6 @@ qmaster_service="false"
 
 BasicSettings
 SetUpInfoText
-PreInstallCheck
 
 
 ARGC=$#
@@ -156,6 +157,7 @@ while [ $ARGC != 0 ]; do
       ;;
    -m)
      QMASTER="install"
+     PreInstallCheck
      . ./util/install_modules/inst_qmaster.sh
      . ./util/install_modules/inst_berkeley.sh
      . ./util/install_modules/inst_st.sh
@@ -167,6 +169,7 @@ while [ $ARGC != 0 ]; do
      ;; 
    -x)
      EXECD="install"
+     PreInstallCheck
      . ./util/install_modules/inst_execd.sh
      if [ "$2" = "-upd" ]; then
          UPDATE="true"
@@ -187,6 +190,7 @@ while [ $ARGC != 0 ]; do
      ;;
    -sm)
      SHADOW="install"
+     PreInstallCheck
      . ./util/install_modules/inst_qmaster.sh
      . ./util/install_modules/inst_execd.sh
      #echo Install Shadowhost
@@ -234,6 +238,7 @@ while [ $ARGC != 0 ]; do
      #update from 6.0 or higher to 6.2
      UPDATE=true
      QMASTER="install"
+     PreInstallCheck
      . ./util/install_modules/inst_qmaster.sh
      . ./util/install_modules/inst_berkeley.sh
      . ./util/install_modules/inst_st.sh
@@ -275,6 +280,7 @@ while [ $ARGC != 0 ]; do
    -winsvc)
      #install the windows helper service only
      WIN_SVC="install"
+     PreInstallCheck
      . ./util/install_modules/inst_common.sh
      . ./util/install_modules/inst_execd.sh
      ;;

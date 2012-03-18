@@ -27,7 +27,7 @@ libXltree.a: $(XLTREE_OBJS)
 	$(RANLIB) libXltree.a
 
 libXltree$(SHAREDEXT): $(XLTREE_OBJS)
-	$(SHAREDLD) $(XLFLAGS) $(GSHARED_LFLAGS) -o libXltree$(SHAREDEXT) $(XLTREE_OBJS) $(XLIBS)
+	$(SHAREDLD) $(XLFLAGS) $(GSHARED_LFLAGS) -o libXltree$(SHAREDEXT) $(XLTREE_OBJS) $(XMLIBS)
 
 Xltree_clean:
 	$(RM) $(XLTREE_OBJS) libXltree.a libXltree$(SHAREDEXT)

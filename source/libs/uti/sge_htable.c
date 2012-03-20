@@ -152,15 +152,15 @@ static void sge_htable_resize(htable ht, int grow)
    
 #ifdef SGE_USE_PROFILING
    clock_t start = 0;
-#endif   
    char buffer[1024];
    dstring buffer_wrapper;
+#endif
 
    DENTER_(BASIS_LAYER, "sge_htable_resize");
 
+#ifdef SGE_USE_PROFILING
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
-#ifdef SGE_USE_PROFILING
    if(prof_is_active(SGE_PROF_HT_RESIZE) && log_state_get_log_level() >= LOG_DEBUG) {
       struct tms t_buf;
       DEBUG((SGE_EVENT, "hash stats before resizing: %s\n", 

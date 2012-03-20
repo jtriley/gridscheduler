@@ -45,6 +45,12 @@ RCSID("$Id: tc.who.c,v 1.2 2005/01/19 11:12:52 ernst Exp $")
  */
 #include <ctype.h>
 
+#ifdef __SunOS
+  #ifdef _PATH_UTMP
+    #undef _PATH_UTMP
+  #endif
+#endif
+
 #ifdef HAVEUTMPX
 # include <utmpx.h>
 /* I just redefine a few words here.  Changing every occurrence below

@@ -50,9 +50,7 @@
 #include <Xm/Traversal.h>
 #endif
 
-#ifdef LesstifVersion
-#undef NeedWidePrototypes
-#endif
+#ifndef LesstifVersion
 
 #ifndef SOLARIS
 #if XmVersion >= 2000
@@ -95,6 +93,7 @@ extern void _XmDrawHighlight(
 #endif /* NeedWidePrototypes */
                         int line_style) ;
 
+#endif
 #endif
 #endif
 

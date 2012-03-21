@@ -490,8 +490,16 @@ Cardinal *num_args;
      * the renderTable.
      */
     if (!lw->layout.font)
-        XmeRenderTableGetDefaultFont(lw->layout.render_table,
-                                     &lw->layout.font);
+        XmeRenderTableGetDefaultFont(lw->layout.render_table, &lw->layout.font);
+
+#ifdef LesstifVersion
+     /*
+      * The previous fails with lesstif, try again...
+      */
+     if (!lw->layout.font)
+         _XmFontListGetDefaultFont(lw->layout.font_list, &lw->layout.font);
+#endif /* LesstifVersion */
+
 #endif
     
     /* figure out resolution independence values */

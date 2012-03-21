@@ -72,12 +72,14 @@ static String pixmap_types[] = {
     XmRPrimForegroundPixmap,
     XmRManForegroundPixmap,
     XmRGadgetPixmap
+#ifndef LesstifVersion
 #if XmVersion >= 2000
     ,
     XmRLargeIconPixmap ,
     XmRSmallIconPixmap,
     XmRDynamicPixmap
 #endif
+#endif /* LesstifVersion */
     
 };
 

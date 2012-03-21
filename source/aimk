@@ -1560,11 +1560,10 @@ case LINUX*:
       endif
    endif
 
-#   set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
-
    set CFLAGS = "$OFLAG -Wall -Wstrict-prototypes -DUSE_POLL -DLINUX -DLINUX_NATIVE -D$BUILDARCH -D$COMPILE_ARCH -D_GNU_SOURCE -DGETHOSTBYNAME_R6 -DGETHOSTBYADDR_R8 -DHAS_VSNPRINTF $DEBUG_FLAG $CFLAGS"
 
    if ("$WERR" == 1) then
+      set CFLAGS = "$CFLAGS -Wno-strict-aliasing"
       set CFLAGS = "$CFLAGS -Werror"
    endif
 

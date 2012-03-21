@@ -160,6 +160,7 @@ endsw
 if ( ! $?JAVA_HOME ) then
 
    set JAVAC_BIN = `which \javac`
+   set JAVA_HOME_LOCATION = ""
 
    set JAVAC_LOCATION = $JAVAC_BIN
    while ( { test -L "$JAVAC_LOCATION" }  )
@@ -197,6 +198,23 @@ if ( ! $?JAVA_HOME ) then
       if ( -d "$JAVA_HOME_LOCATION" ) then
          setenv JAVA_HOME            $JAVA_HOME_LOCATION
          setenv JAVA_HOME_SET_BY_SGE TRUE
+      else
+         set JAVAC_LOCATION = `which \javac`
+
+         while ( { test -L "$JAVAC_LOCATION" }  )
+             set JAVAC_LOCATION = `readlink $JAVAC_LOCATION`
+             if ( $status != 0 ) then
+                break
+             endif
+
+             set CHECK_PATH = `expr //$JAVAC_LOCATION : '//\(.*\)/bin/.*'`
+
+             if ( -e "$CHECK_PATH/include/jni.h" ) then
+                setenv JAVA_HOME            $CHECK_PATH
+                setenv JAVA_HOME_SET_BY_SGE TRUE
+                break
+             endif
+         end
       endif
    endif
 endif

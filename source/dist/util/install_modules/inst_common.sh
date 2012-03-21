@@ -372,7 +372,7 @@ CheckPath()
 CheckBinaries()
 {
    BINFILES="qacct qalter qconf qdel qhold \
-             qhost qlogin qmake qmod qmon qresub qrls qrsh qselect qsh \
+             qhost qlogin qmake qmod qresub qrls qrsh qselect qsh \
              qstat qsub qtcsh qping qquota sgepasswd"
 
    WINBINFILES="qacct qalter qconf qdel qhold qhost qlogin \

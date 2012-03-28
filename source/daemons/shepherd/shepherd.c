@@ -2745,7 +2745,7 @@ struct rusage *rusage      /* accounting information */
 
 /*-------------------------------------------------------------------------
  * set_ckpt_params
- * may not called befor "job_pid" is known and set in the configuration
+ * may not call before "job_pid" is known and set in the configuration
  * don't do anything for non ckpt jobs except setting ckpt_interval = 0
  *-------------------------------------------------------------------------*/
 static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,

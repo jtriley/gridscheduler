@@ -194,7 +194,9 @@ int sge_add_host_of_type(sge_gdi_ctx_class_t *ctx, const char *hostname,
    DENTER(TOP_LAYER, "sge_add_host_of_type");
 
    if (hostname == NULL)
+   {
       DRETURN(-1);
+   }
   
    object = get_gdi_object(target);
    

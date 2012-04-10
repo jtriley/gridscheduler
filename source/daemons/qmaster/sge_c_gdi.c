@@ -1253,7 +1253,7 @@ trigger_scheduler_monitoring(sge_gdi_packet_class_t *packet, sge_gdi_task_class_
 /*
  * MT-NOTE: sge_c_gdi_mod() is MT safe
  */
-void sge_c_gdi_mod(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
+static void sge_c_gdi_mod(sge_gdi_ctx_class_t *ctx, gdi_object_t *ao,
                    sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, int sub_command,
                    monitoring_t *monitor)
 {

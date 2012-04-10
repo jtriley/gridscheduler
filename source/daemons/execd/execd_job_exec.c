@@ -90,13 +90,13 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
 {
    int ret = 1;
    u_long32 feature_set;
-   const char *admin_user = ctx->get_admin_user(ctx);
    const char *progname = ctx->get_progname(ctx);
 
    DENTER(TOP_LAYER, "do_job_exec");
 
    /* ------- featureset */
-   if (unpackint(&(aMsg->buf), &feature_set)) {
+   if (unpackint(&(aMsg->buf), &feature_set))
+   {
       ERROR((SGE_EVENT, MSG_COM_UNPACKFEATURESET));
       DRETURN(0);
    }
@@ -104,9 +104,11 @@ int do_job_exec(sge_gdi_ctx_class_t *ctx, struct_msg_t *aMsg, sge_pack_buffer *a
    /* if request comes from qmaster: start a job
     * else it is a request to start a pe task
     */
-   if (strcmp(aMsg->snd_name, prognames[QMASTER]) == 0) {
+   if (strcmp(aMsg->snd_name, prognames[QMASTER]) == 0)
+   {
       lListElem *job, *ja_task;
       lList *answer_list = NULL;
+      const char *admin_user = ctx->get_admin_user(ctx);
 
       if (!sge_security_verify_unique_identifier(true, admin_user, progname, 0,
                                             aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
@@ -656,8 +658,6 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
 
    DENTER(TOP_LAYER, "handle_task");
 
-   petep = lCreateElem(PET_Type);
-
 #ifdef KERBEROS
    if (krb_verify_user(de->host, de->commproc, de->id,
                        lGetString(petrep, PETR_owner)) < 0) {
@@ -669,32 +669,48 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
    jobid    = lGetUlong(petrep, PETR_jobid);
    jataskid = lGetUlong(petrep, PETR_jataskid);
 
-   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep)) {
+   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep))
+   {
       goto Error;
    }
 
-   if (!sge_security_verify_unique_identifier(false, 
-                                         lGetString(jep, JB_owner), progname, 0,
-                                         host, commproc, id)) {
+  /*
+   * Verify that it is actually the job owner starting a pe task:
+   * - in CSP mode, we can check against the user certificate
+   * - in general we can compare the pe task request owner against the job owner
+   */
+   if (!sge_security_verify_unique_identifier(false, lGetString(jep, JB_owner), progname, 0, host, commproc, id))
+   {
+      /* Error message is generated in sge_security_verify_unique_identifier */
+      goto Error;
+   }
+
+   if (strcmp(lGetString(jep, JB_owner), lGetString(petrep, PETR_owner)) != 0)
+   {
+      WARNING((SGE_EVENT, MSG_DENIED_PETASKREQUEST_WRONG_USER_SS, lGetString(petrep, PETR_owner), lGetString(jep, JB_owner)));
       goto Error;
    }
 
    /* do not accept the task if job is not parallel or 'control_slaves' is not active */
-   if (!(pe=lGetObject(jatep, JAT_pe_object)) || !lGetBool(pe, PE_control_slaves)) {
+   if (!(pe=lGetObject(jatep, JAT_pe_object)) || !lGetBool(pe, PE_control_slaves))
+   {
       ERROR((SGE_EVENT, MSG_JOB_TASKNOSUITABLEJOB_U, sge_u32c(jobid)));
       goto Error;
    }
 
    /* do not accept the task if job is in deletion */
-   if (lGetUlong(jatep, JAT_state) & JDELETED) {
+   if (lGetUlong(jatep, JAT_state) & JDELETED)
+   {
       DPRINTF(("received task exec request while job is in deletion or exiting\n"));
       goto Error;
    }
 
    /* generate unique task id by combining consecutive number 1-max(u_long32) */
    tid = MAX(1, lGetUlong(jatep, JAT_next_pe_task_id));
-   sprintf(new_task_id, "%d.%s", tid, unqualified_hostname);
+   snprintf(new_task_id, sizeof(new_task_id), "%d.%s", tid, unqualified_hostname);
    DPRINTF(("using pe_task_id_str %s for job "sge_u32"."sge_u32"\n", new_task_id, jobid, jataskid));
+
+   petep = lCreateElem(PET_Type);
    lSetString(petep, PET_id, new_task_id);
 
    /* set taskid for next task to be started */
@@ -703,10 +719,8 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
    lSetString(petep, PET_name, "petask");
    lSetUlong(petep, PET_submission_time, lGetUlong(petrep, PETR_submission_time));
    lSetString(petep, PET_cwd, lGetString(petrep, PETR_cwd));
-   lSetList(petep, PET_environment, 
-            lCopyList("petask environment", lGetList(petrep, PETR_environment)));
-   lSetList(petep, PET_path_aliases, 
-            lCopyList("petask path_aliases", lGetList(petrep, PETR_path_aliases)));
+   lSetList(petep, PET_environment, lCopyList("petask environment", lGetList(petrep, PETR_environment)));
+   lSetList(petep, PET_path_aliases, lCopyList("petask path_aliases", lGetList(petrep, PETR_path_aliases)));
 
    requested_queue = lGetString(petrep, PETR_queuename);
 
@@ -728,14 +742,18 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
    }
          
    /* put task into task_list of slave/master job */ 
-   if (lGetList(jatep, JAT_task_list) == NULL) {
+   if (lGetList(jatep, JAT_task_list) == NULL)
+   {
       lSetList(jatep, JAT_task_list, lCreateList("task_list", PET_Type));
    }
+
    /* put task into task_list of slave/master job */ 
    lAppendElem(lGetList(jatep, JAT_task_list), petep);
 
-   if (!mconf_get_simulate_jobs()) {
-      if (job_write_spool_file(jep, jataskid, NULL, SPOOL_WITHIN_EXECD)) { 
+   if (!mconf_get_simulate_jobs())
+   {
+      if (job_write_spool_file(jep, jataskid, NULL, SPOOL_WITHIN_EXECD))
+      { 
          dstring err_str = DSTRING_INIT;
          sge_dstring_copy_string(&err_str, SGE_EVENT);
          execd_job_start_failure(jep, jatep, petep, sge_dstring_get_string(&err_str), 1);
@@ -756,23 +774,27 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
       add_usage(jr, "submission_time", NULL, lGetUlong(petep, PET_submission_time));
       
       /* if we are not interested in online usage per task, suppress sending of this job report */
-      if (mconf_get_sharetree_reserved_usage() && lGetBool(pe, PE_accounting_summary)) {
+      if (mconf_get_sharetree_reserved_usage() && lGetBool(pe, PE_accounting_summary))
+      {
          lSetBool(jr, JR_no_send, true);
       }
    }
 
    /* for debugging: never start job but report a failure */
-   if (getenv("FAILURE_BEFORE_START")) {
+   if (getenv("FAILURE_BEFORE_START"))
+   {
       execd_job_start_failure(jep, jatep, petep, "FAILURE_BEFORE_START", 0);
    }   
 
-   if (sge_make_pe_task_active_dir(jep, jatep, petep, NULL) == NULL) {
+   if (sge_make_pe_task_active_dir(jep, jatep, petep, NULL) == NULL)
+   {
      goto Error;
    }
 
    /* put task into task_list of slave/master job */ 
    /* send ack to sender of task */
-   if (tid) {
+   if (tid)
+   {
       DPRINTF(("sending tid %s\n", new_task_id)); 
       packstr(apb, new_task_id);
    }
@@ -881,7 +903,8 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
     * validate, stdin may not be the same as stdout or stderr
     * except, when it is "/dev/null".
     */
-   if (ret) {
+   if (ret)
+   {
       char stdin_path[SGE_PATH_MAX];
       char stdout_path[SGE_PATH_MAX];
       char stderr_path[SGE_PATH_MAX];
@@ -909,12 +932,16 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
                    job_id,
                    job_is_array(job) ? ja_task_id : 0,
                    SGE_STDERR, stderr_path, SGE_PATH_MAX);
-      if (strcmp(stdin_path, "/dev/null") != 0) {
-         if (strcmp(stdin_path, stdout_path) == 0) {
+      if (strcmp(stdin_path, "/dev/null") != 0)
+      {
+         if (strcmp(stdin_path, stdout_path) == 0)
+         {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_JOB_SAMEPATHSFORINPUTANDOUTPUT_SSS, stdin_path, "stdout", stdout_path);
             ret = false;
-         } else if (strcmp(stdin_path, stderr_path) == 0) {
+         }
+         else if (strcmp(stdin_path, stderr_path) == 0)
+         {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                               MSG_JOB_SAMEPATHSFORINPUTANDOUTPUT_SSS, stdin_path, "stderr", stderr_path);
             ret = false;

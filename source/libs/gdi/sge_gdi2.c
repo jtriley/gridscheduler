@@ -1154,8 +1154,8 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
    unsigned long dummy_mid;
    unsigned long* mid_pointer = NULL;
    int use_execd_handle = 0;
-   u_long32 progid = sge_ctx->get_who(sge_ctx);
-   
+   u_long32 progid;
+
    DENTER(GDI_LAYER, "gdi2_send_message");
 
    /* CR- TODO: This is for tight integration of qrsh -inherit
@@ -1166,10 +1166,14 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
     *       to a cl_com_handle_t* handle and use this handle to
     *       send/receive messages to the correct endpoint.
     */
-   if ( tocomproc[0] == '\0') {
+   if (tocomproc[0] == '\0')
+   {
       DEBUG((SGE_EVENT,"tocomproc is empty string\n"));
    }
-   switch (progid) {
+
+   progid = sge_ctx->get_who(sge_ctx);
+   switch (progid)
+   {
       case QMASTER:
       case EXECD:
          use_execd_handle = 0;
@@ -1205,17 +1209,20 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
                               CL_FALSE, sge_get_execd_port(), CL_TCP_DEFAULT,
                               "execd_handle" , 0 , 1 , 0 );
          handle = cl_com_get_handle("execd_handle", 0);
-         if (handle == NULL) {
-            ERROR((SGE_EVENT,MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, tocomproc));
-            ERROR((SGE_EVENT,cl_get_error_text(commlib_error)));
+         if (handle == NULL)
+         {
+            ERROR((SGE_EVENT, MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, tocomproc));
+            ERROR((SGE_EVENT, cl_get_error_text(commlib_error)));
          }
       }
    }
 
-   if (synchron) {
+   if (synchron)
+   {
       ack_type = CL_MIH_MAT_ACK;
    }
-   if (mid != NULL) {
+   if (mid != NULL)
+   {
       mid_pointer = &dummy_mid;
    }
 
@@ -1223,7 +1230,8 @@ gdi2_send_message(sge_gdi_ctx_class_t *sge_ctx, int synchron, const char *tocomp
                                  ack_type, (cl_byte_t**)buffer, (unsigned long)buflen,
                                  mid_pointer, 0, tag, CL_FALSE, (cl_bool_t)synchron);
 
-   if (mid != NULL) {
+   if (mid != NULL)
+   {
       *mid = dummy_mid;
    }
 
@@ -1243,13 +1251,11 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
 {
    
    int ret;
-   cl_com_handle_t* handle = NULL;
-   cl_com_message_t* message = NULL;
-   cl_com_endpoint_t* sender = NULL;
+   cl_com_handle_t *handle = NULL;
+   cl_com_message_t *message = NULL;
+   cl_com_endpoint_t *sender = NULL;
    int use_execd_handle = 0;
-
-   u_long32 progid = sge_ctx->get_who(sge_ctx);
-   u_long32 sge_execd_port = sge_ctx->get_sge_execd_port(sge_ctx);
+   u_long32 progid;
 
 
    DENTER(GDI_LAYER, "gdi2_receive_message");
@@ -1264,89 +1270,119 @@ gdi2_receive_message(sge_gdi_ctx_class_t *sge_ctx, char *fromcommproc, u_short *
     */
 
 
-   if (fromcommproc[0] == '\0') {
+   if (fromcommproc[0] == '\0')
+   {
       DEBUG((SGE_EVENT,"fromcommproc is empty string\n"));
    }
-   switch (progid) {
+
+   progid = sge_ctx->get_who(sge_ctx);
+   switch (progid)
+   {
       case QMASTER:
       case EXECD:
          use_execd_handle = 0;
          break;
       default:
-         if (strcmp(fromcommproc,prognames[QMASTER]) == 0) {
+         if (strcmp(fromcommproc,prognames[QMASTER]) == 0)
+         {
             use_execd_handle = 0;
-         } else {
-            if (fromcommproc != NULL && fromcommproc[0] != '\0') {
+         }
+         else
+         {
+            if (fromcommproc != NULL && fromcommproc[0] != '\0')
+            {
                use_execd_handle = 1;
             }
          }
    }
 
-   if (use_execd_handle == 0) {
+   if (use_execd_handle == 0)
+   {
       /* normal gdi send to qmaster */
       DEBUG((SGE_EVENT,"standard gdi receive message\n"));
       handle = sge_ctx->get_com_handle(sge_ctx);
-   } else {
+   }
+   else
+   {
       /* we have to send a message to another component than qmaster */
       DEBUG((SGE_EVENT,"search handle to \"%s\"\n", fromcommproc));
       handle = cl_com_get_handle("execd_handle", 0);
-      if (handle == NULL) {
+      if (handle == NULL)
+      {
          int commlib_error = CL_RETVAL_OK;
-         cl_framework_t  communication_framework = CL_CT_TCP;
-         DEBUG((SGE_EVENT,"creating handle to \"%s\"\n", fromcommproc));
-         if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
+         cl_framework_t communication_framework = CL_CT_TCP;
+         u_long32 sge_execd_port = sge_ctx->get_sge_execd_port(sge_ctx);
+
+         DEBUG((SGE_EVENT, "creating handle to \"%s\"\n", fromcommproc));
+         if (feature_is_enabled(FEATURE_CSP_SECURITY))
+         {
             DPRINTF(("using communication lib with SSL framework (execd_handle)\n"));
             communication_framework = CL_CT_SSL;
          }
          
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
-                              CL_FALSE, sge_execd_port, CL_TCP_DEFAULT, 
-                              "execd_handle" , 0 , 1 , 0 );
+                              CL_FALSE, sge_execd_port, CL_TCP_DEFAULT, "execd_handle", 0, 1, 0);
+
          handle = cl_com_get_handle("execd_handle", 0);
-         if (handle == NULL) {
-            ERROR((SGE_EVENT,MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, fromcommproc));
-            ERROR((SGE_EVENT,cl_get_error_text(commlib_error)));
+         if (handle == NULL)
+         {
+            ERROR((SGE_EVENT, MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S, fromcommproc));
+            ERROR((SGE_EVENT, cl_get_error_text(commlib_error)));
          }
       }
    } 
 
    ret = cl_commlib_receive_message(handle, fromhost, fromcommproc, *fromid, (cl_bool_t)synchron, 0, &message, &sender);
 
-   if (ret == CL_RETVAL_CONNECTION_NOT_FOUND) {
-      if (fromcommproc[0] != '\0' && fromhost[0] != '\0') {
+   if (ret == CL_RETVAL_CONNECTION_NOT_FOUND)
+   {
+      if (fromcommproc[0] != '\0' && fromhost[0] != '\0')
+      {
           /* The connection was closed, reopen it */
-          ret = cl_commlib_open_connection(handle,fromhost,fromcommproc, *fromid);
-          INFO((SGE_EVENT,"reopen connection to %s,%s,"sge_U32CFormat" (1)\n", fromhost , fromcommproc , sge_u32c(*fromid)));
-          if (ret == CL_RETVAL_OK) {
-             INFO((SGE_EVENT,"reconnected successfully\n"));
+          ret = cl_commlib_open_connection(handle, fromhost, fromcommproc, *fromid);
+          INFO((SGE_EVENT, "reopen connection to %s,%s, "sge_U32CFormat" (1)\n", fromhost , fromcommproc , sge_u32c(*fromid)));
+          if (ret == CL_RETVAL_OK)
+          {
+             INFO((SGE_EVENT, "reconnected successfully\n"));
              ret = cl_commlib_receive_message(handle, fromhost, fromcommproc, *fromid, (cl_bool_t) synchron, 0, &message, &sender);
           } 
-      } else {
-         DEBUG((SGE_EVENT,"can't reopen a connection to unspecified host or commproc (1)\n"));
+      }
+      else
+      {
+         DEBUG((SGE_EVENT, "can't reopen a connection to unspecified host or commproc (1)\n"));
       }
    }
 
-   if (message != NULL && ret == CL_RETVAL_OK) {
+   if (message != NULL && ret == CL_RETVAL_OK)
+   {
       *buffer = (char *)message->message;
       message->message = NULL;
       *buflen = message->message_length;
-      if (tag) {
+      if (tag)
+      {
          *tag = (int)message->message_tag;
       }
 
-      if (sender != NULL) {
+      if (sender != NULL)
+      {
          DEBUG((SGE_EVENT,"received from: %s,"sge_U32CFormat"\n",sender->comp_host, sge_u32c(sender->comp_id)));
-         if (fromcommproc != NULL && fromcommproc[0] == '\0') {
+         if (fromcommproc != NULL && fromcommproc[0] == '\0')
+         {
             strcpy(fromcommproc, sender->comp_name);
          }
-         if (fromhost != NULL) {
+
+         if (fromhost != NULL)
+         {
             strcpy(fromhost, sender->comp_host);
          }
-         if (fromid != NULL) {
+
+         if (fromid != NULL)
+         {
             *fromid = (u_short)sender->comp_id;
          }
       }
    }
+
    cl_com_free_message(&message);
    cl_com_free_endpoint(&sender);
 
@@ -1472,9 +1508,9 @@ lListElem **lepp
    if (!success) {
       if (!already_logged) {
          ERROR((SGE_EVENT, MSG_CONF_GETCONF_S, lGetString(lFirst(alp), AN_text)));
-         already_logged = 1;       
+         already_logged = 1;
       }
-                   
+
       lFreeList(&alp);
       lFreeList(&lp);
       lFreeElem(&hep);
@@ -1527,7 +1563,7 @@ int gdi2_wait_for_conf(sge_gdi_ctx_class_t *ctx, lList **conf_list) {
    u_long32 progid = ctx->get_who(ctx);
    
    /* TODO: move this function to execd */
-   DENTER(GDI_LAYER, "gdi2_wait_for_confgdi2_wait_for_conf");
+   DENTER(GDI_LAYER, "gdi2_wait_for_conf");
    /*
     * for better performance retrieve 2 configurations
     * in one gdi call

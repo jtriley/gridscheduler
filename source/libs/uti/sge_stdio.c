@@ -58,13 +58,6 @@
 #   include "sge_smf.h"
 #endif
 
-#ifdef NO_SGE_COMPILE_DEBUG
-#   undef SGE_EXIT
-#   define SGE_EXIT(x)     exit(x)
-#endif
- 
-static void addenv(char *, char *);
- 
 static void addenv(char *key, char *value)
 {
    char *str;

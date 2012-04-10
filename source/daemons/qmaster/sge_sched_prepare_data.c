@@ -402,9 +402,10 @@ ensure_valid_what_and_where(sge_where_what_t *where_what)
       CRITICAL((SGE_EVENT, MSG_SCHEDD_UNABLE_TO_SETUP_FILTER));
    }
    /* cleanup tmp data */
-   if (tmp_what_descr != NULL) {
+   if (tmp_what_descr != NULL)
+   {
       cull_hash_free_descr(tmp_what_descr);
-      tmp_what_descr = (lDescr *)sge_free((char *)tmp_what_descr);
+      FREE(tmp_what_descr);
    }
    DRETURN_VOID;
 }

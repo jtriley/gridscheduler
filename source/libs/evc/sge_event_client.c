@@ -798,14 +798,13 @@ static void sge_evc_destroy(sge_evc_t **sge_evc)
    pthread_mutex_lock(&((*sge_evc)->event_control.mutex));
    pthread_cond_broadcast(&((*sge_evc)->event_control.cond_var));
    pthread_mutex_unlock(&((*sge_evc)->event_control.mutex));
-                                                                                                  
+
    pthread_cond_destroy(&((*sge_evc)->event_control.cond_var));
    pthread_mutex_destroy(&((*sge_evc)->event_control.mutex));
    lFreeList(&((*sge_evc)->event_control.new_events));
 
    lFreeElem(&((*sge_evc)->ec));
    FREE(*sge_evc);
-   *sge_evc = NULL;
    
    DRETURN_VOID;
 }
@@ -2215,7 +2214,7 @@ static bool ec2_unset_flush(sge_evc_class_t *thiz, ev_event event)
    if (sge_evc->ec == NULL) {
       ERROR((SGE_EVENT, MSG_EVENT_UNINITIALIZED_EC));
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
-      WARNING((SGE_EVENT, MSG_EVENT_ILLEGALEVENTID_I, event ));
+      WARNING((SGE_EVENT, MSG_EVENT_ILLEGALEVENTID_I, event));
    } else {
       lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
@@ -2224,7 +2223,7 @@ static bool ec2_unset_flush(sge_evc_class_t *thiz, ev_event event)
       } 
       else { 
          ec2_mod_subscription_flush(thiz, event, EV_NOT_FLUSHED, EV_NO_FLUSH);
-      } 
+      }
 
       if (lGetBool(sge_evc->ec, EV_changed)) {
          ret = true;

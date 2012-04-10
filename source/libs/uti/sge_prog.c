@@ -663,7 +663,7 @@ static void prog_state_destroy(void *theState)
    FREE(s->unqualified_hostname);
    FREE(s->user_name);
    FREE(s->default_cell);
-   sge_free((char*)s);
+   FREE(s);
 }
 
 /****** uti/prog/prog_state_getspecific() **************************************
@@ -819,7 +819,6 @@ void sge_prog_state_class_destroy(sge_prog_state_class_t **pst)
       
    prog_state_destroy((*pst)->sge_prog_state_handle);
    FREE(*pst);
-   *pst = NULL;
 
    DEXIT;
 }
@@ -885,7 +884,7 @@ static bool sge_prog_state_setup(sge_prog_state_class_t *thiz, sge_env_state_cla
       } else {
          thiz->set_user_name(thiz, paswd->pw_name);
       }
-   }   
+   }
  
    /*
    if (ret) {

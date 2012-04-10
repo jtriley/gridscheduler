@@ -80,10 +80,9 @@ static pthread_key_t  log_context_key;
 static void log_buffer_once_init(void);
 static void log_context_once_init(void);
 
-static void log_buffer_destroy(void* theState);
+static void pthread_key_destructor(void *theState);
 static log_buffer_t* log_buffer_getspecific(void);
 
-static void log_context_destroy(void* theState);
 static log_context_t* log_context_getspecific(void);
 static sge_gdi_ctx_class_t* log_state_get_log_context(void);
 
@@ -692,15 +691,15 @@ static void sge_do_log(u_long32 me, const char* progname, const char* unqualifie
 *******************************************************************************/
 static void log_buffer_once_init(void)
 {
-   pthread_key_create(&log_buffer_key, &log_buffer_destroy);
+   pthread_key_create(&log_buffer_key, &pthread_key_destructor);
 } /* log_once_init */
 
-/****** uti/log/log_buffer_destroy() ****************************************
+/****** uti/log/pthread_key_destructor() ****************************************
 *  NAME
-*     log_buffer_destroy() -- Free thread local storage
+*     pthread_key_destructor() -- Free thread local storage
 *
 *  SYNOPSIS
-*     static void log_buffer_destroy(void* theState) 
+*     static void pthread_key_destructor(void *theState) 
 *
 *  FUNCTION
 *     Free thread local storage.
@@ -712,13 +711,14 @@ static void log_buffer_once_init(void)
 *     static void - none
 *
 *  NOTES
-*     MT-NOTE: log_buffer_destroy() is MT safe.
+*     MT-NOTE: pthread_key_destructor() is MT safe.
 *
 *******************************************************************************/
-static void log_buffer_destroy(void* theBuffer)
+static void pthread_key_destructor(void *theContext)
 {
-   sge_free((char*)theBuffer);
+   FREE(theContext);
 }
+
 
 /****** uti/log/log_buffer_getspecific() ****************************************
 *  NAME
@@ -789,33 +789,8 @@ static log_buffer_t* log_buffer_getspecific(void)
 *******************************************************************************/
 static void log_context_once_init(void)
 {
-   pthread_key_create(&log_context_key, &log_context_destroy);
+   pthread_key_create(&log_context_key, &pthread_key_destructor);
 } /* log_once_init */
-
-/****** uti/log/log_context_destroy() ****************************************
-*  NAME
-*     log_context_destroy() -- Free thread local storage
-*
-*  SYNOPSIS
-*     static void log_context_destroy(void* theState) 
-*
-*  FUNCTION
-*     Free thread local storage.
-*
-*  INPUTS
-*     void* theState - Pointer to memroy which should be freed.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: log_context_destroy() is MT safe.
-*
-*******************************************************************************/
-static void log_context_destroy(void* theContext)
-{
-   sge_free((char*)theContext);
-}
 
 /****** uti/log/log_context_getspecific() ****************************************
 *  NAME

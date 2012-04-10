@@ -1067,7 +1067,8 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   if (queue == NULL) {
+   if (queue == NULL)
+   {
       if (!(jep = job_list_locate(*(object_type_get_master_list(SGE_TYPE_JOB)), jobid)) || !(jatep=job_search_task(jep, NULL, jataskid)))
       {
          ERROR((SGE_EVENT, MSG_EVE_RESENTSIGNALTASK_UU, sge_u32c(jobid), sge_u32c(jataskid)));
@@ -1083,7 +1084,7 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
       if (!(qep = cqueue_list_locate_qinstance(*(object_type_get_master_list(SGE_TYPE_CQUEUE)), queue))) {
          ERROR((SGE_EVENT, MSG_EVE_RESENTSIGNALQ_S, queue));
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-         sge_free((char *)queue);
+         FREE(queue);
          DEXIT;
          return;
       }
@@ -1092,7 +1093,7 @@ void resend_signal_event(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, monitorin
    }
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-   sge_free((char *)queue);
+   FREE(queue);
 
    DEXIT;
    return;

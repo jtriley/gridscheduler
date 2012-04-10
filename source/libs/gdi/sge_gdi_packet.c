@@ -370,7 +370,7 @@ sge_gdi_task_free(sge_gdi_task_class_t ** task)
       lFreeList(&((*task)->answer_list));
       lFreeWhat(&((*task)->enumeration));
       lFreeWhere(&((*task)->condition));
-      *task = (sge_gdi_task_class_t *) sge_free((char *) (*task));
+      FREE(*task);
    }
    DRETURN(ret);
 }
@@ -737,7 +737,8 @@ sge_gdi_packet_free(sge_gdi_packet_class_t ** packet)
    bool ret = true;
 
    DENTER(TOP_LAYER, "sge_gdi_packet_free");
-   if (packet != NULL && *packet != NULL) {
+   if (packet != NULL && *packet != NULL)
+   {
       sge_gdi_task_class_t *task = NULL;
       sge_gdi_task_class_t *next_task = NULL;
       int local_ret1;
@@ -753,11 +754,10 @@ sge_gdi_packet_free(sge_gdi_packet_class_t ** packet)
       if (local_ret1 != 0 || local_ret2 != 0) {
          ret = false;
       }
-      (*packet)->host = sge_free((char *) (*packet)->host);
-      (*packet)->commproc = sge_free((char *) (*packet)->commproc);
-
-      (*packet)->auth_info = sge_free((char *) (*packet)->auth_info);
-      *packet = (sge_gdi_packet_class_t *)sge_free((char *) *packet);
+      FREE((*packet)->host);
+      FREE((*packet)->commproc);
+      FREE((*packet)->auth_info);
+      FREE( *packet);
    }
    DRETURN(ret);
 }

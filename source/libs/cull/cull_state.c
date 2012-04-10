@@ -220,7 +220,7 @@ static void cull_once_init(void)
 *******************************************************************************/
 static void cull_state_destroy(void* theState)
 {
-   sge_free((char*)theState);
+   FREE(theState);
 }
 
 /****** cull_state/cull_state_getspecific() ************************************

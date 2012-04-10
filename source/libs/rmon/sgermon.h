@@ -203,18 +203,23 @@
 #else /* NO_SGE_COMPILE_DEBUG */
 
 #define DENTER_MAIN( layer, program )
+#define DENTER_( layer, function)
 #define DENTER( layer, function)
 #define DEXIT
+#define DEXIT_
 #define DRETURN(x) return x
+#define DRETURN_(x) return x
 #define DRETURN_VOID return
+#define DRETURN_VOID_ return
 #define DTRACE
 #define DLOCKPRINTF(x)
 #define DPRINTF(x)
+#define DPRINTF_(x)
 #define DTIMEPRINTF(x)
 #define DSPECIALPRINTF(x)
 #define DCLOSE
 #define TRACEON
-#define ISTRACE
+#define ISTRACE            0
 #define SGE_EXIT(x, y)     sge_exit((x), (y))
 
 #endif /* NO_SGE_COMPILE_DEBUG */

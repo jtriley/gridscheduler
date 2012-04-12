@@ -507,24 +507,25 @@ int qlogin_starter(const char *cwd, char *daemon, char** env)
       return 8;
    }
 
-   /* send necessary info to qrsh: port + utilbin directory + active job 
-    * directory 
+   /* send necessary info to qrsh: port + utilbin directory + active job
+    * directory
     */
-   port = ntohs(serv_addr.sin_port);
-   shepherd_trace("bound to port %d", port);
- 
+
    sge_root = sge_get_root_dir(0, NULL, 0, 1);
    arch = sge_get_arch();
-   
-   if (sge_root == NULL || arch == NULL) {
-      shepherd_trace("reading environment SGE_ROOT and ARC failed");
+
+   if (sge_root == NULL || arch == NULL)
+   {
+      shepherd_trace("reading environment SGE_ROOT and ARCH failed");
       shutdown(sockfd, 2);
       close(sockfd);
       return 9;
    }
-  
-   snprintf(buffer, sizeof(buffer), "0:%d:%s/utilbin/%s:%s:%s",
-            port, sge_root, arch, cwd, get_conf_val("host"));
+
+   port = ntohs(serv_addr.sin_port);
+   shepherd_trace("bound to port %d", port);
+
+   snprintf(buffer, sizeof(buffer), "0:%d:%s/utilbin/%s:%s:%s", port, sge_root, arch, cwd, get_conf_val("host"));
 
    if (write_to_qrsh(buffer) != 0) {
       shepherd_trace("communication with qrsh failed");

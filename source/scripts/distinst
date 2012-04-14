@@ -870,10 +870,6 @@ if [ $instcommon = true ]; then
       Execute rm -rf $DEST_SGE_ROOT/util/update_commands
       Execute rm -f $DEST_SGE_ROOT/util/sge_update.sh
 
-      # Install arch.dist as arch for installation process
-      # Execute rm -f $DEST_SGE_ROOT/util/arch
-      # Execute mv $DEST_SGE_ROOT/util/arch.dist $DEST_SGE_ROOT/util/arch
-
       Execute chmod 755 $DEST_SGE_ROOT/util/install_modules \
 			$DEST_SGE_ROOT/util/upgrade_modules \
                         $DEST_SGE_ROOT/util/rctemplates \

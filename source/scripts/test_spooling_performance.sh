@@ -272,10 +272,9 @@ if [ $createdist = true ]; then
       DSTARCH=$i
       SetArchBin $i
 
-      # Install arch.dist as arch for installation process
       Execute rm -rf $SPOOLDIR/util
       Execute mkdir -p $SPOOLDIR/util
-      Execute cp dist/util/arch.dist $SPOOLDIR/util/arch
+      Execute cp dist/util/arch $SPOOLDIR/util/arch
 
       # Install this script
       sed '/\_\_\_CREATEDIST_MARK_START/,/\_\_\_CREATEDIST_MARK_END/d' scripts/test_spooling_performance.sh > $SPOOLDIR/test_spooling_performance.sh
@@ -338,11 +337,12 @@ if [ $createdist = true ]; then
    done
 else
 #___CREATEDIST_MARK_END
-   echo "spooling in $SPOOLDIR"
-   if [ ! -d $SPOOLDIR ]; then
-      echo "$SPOOLDIR does not exists"
+   if [ ! -d "$SPOOLDIR" ]; then
+      echo "SPOOLDIR ($SPOOLDIR) does not exist"
       exit 1
    fi
+
+   echo "spooling in $SPOOLDIR"
 
    if [ -f util/arch ]; then
       ARCH=`util/arch`

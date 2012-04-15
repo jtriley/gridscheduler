@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
 
    /*
     * daemonize qmaster
-    * set filedescripto limits
+    * set file descriptor limits
     * and initialize libraries to be used in multi threaded environment
     * also take care that finished child processed of this process become
     * zombie jobs

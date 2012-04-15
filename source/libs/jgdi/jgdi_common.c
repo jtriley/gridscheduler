@@ -5261,17 +5261,19 @@ JNIEXPORT jstring JNICALL Java_com_sun_grid_jgdi_JGDIFactory_nativeSetJGDIVersio
  * Method:    nativeSgeEdit
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_com_sun_grid_jgdi_util_shell_editor_EditorUtil_nativeSgeEdit(JNIEnv *env, jclass clazz, jstring path) {
-   jint ret = 0;
+JNIEXPORT jint JNICALL Java_com_sun_grid_jgdi_util_shell_editor_EditorUtil_nativeSgeEdit(JNIEnv *env, jclass clazz, jstring path)
+{
+   jint ret;
    uid_t uid = getuid();
-   uid_t gid = getgid();
+   gid_t gid = getgid();
    const char *strpath = NULL;
 
    DENTER(TOP_LAYER, "Java_com_sun_grid_jgdi_util_shell_editor_EditorUtil_nativeSgeEdit");
 
    strpath = (*env)->GetStringUTFChars(env, path, 0);
    ret = sge_edit(strpath, uid, gid);
-   if (strpath) { 
+   if (strpath)
+   { 
       (*env)->ReleaseStringUTFChars(env, path, strpath);
    }
 

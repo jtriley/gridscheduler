@@ -81,7 +81,6 @@
 #if !defined(INTERIX) && !defined(CYGWIN)
 static void init_sig_action_and_mask(void);
 #endif
-static int set_file_descriptor_limit(void);
 
 /****** qmaster/sge_qmaster_main/sge_qmaster_application_status() ************
 *  NAME
@@ -149,7 +148,8 @@ unsigned long sge_qmaster_application_status(char** info_message)
 *              called before starting up the threads.
 *
 *******************************************************************************/
-static int set_file_descriptor_limit(void) {
+static int set_file_descriptor_limit(void)
+{
 
    /* define the max qmaster file descriptor limit */
 #define SGE_MAX_QMASTER_SOFT_FD_LIMIT 8192
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
    /*
     * daemonize qmaster
     * set filedescripto limits
-    * and initialize librarrays to be used in multi threaded environment
+    * and initialize libraries to be used in multi threaded environment
     * also take care that finished child processed of this process become
     * zombie jobs
     */

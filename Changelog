@@ -5,6 +5,10 @@
 ################################################################################
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+RH-2012-04-15-0:  Bugfix:     file descriptors closed too soon in shepherd
+                              (from Brooks Davis, with cleanup from Ron Chen)
+
 RH-2012-04-13-2:  Cleanup     Remove arch.dist
 
 RH-2012-04-13-1:  Enhancem.   hwloc build changes

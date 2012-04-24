@@ -34,7 +34,8 @@
 
 
 void son(const char *childname, char *script_file, int truncate_stderr_out);
-int sge_set_environment(void);
+int sge_set_environment(int);
+int is_dangerous_env(const char *name);
 char **sge_get_environment(void);
 int sge_set_env_value(const char *, const char *);
 const char *sge_get_env_value(const char *);

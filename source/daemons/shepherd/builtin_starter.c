@@ -49,6 +49,7 @@
 #include "uti/sge_arch.h"
 #include "setosjobid.h"
 #include "sge_fileio.h"
+#include "sge_var.h"
 
 #include "msg_common.h"
 
@@ -418,7 +419,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    setrlimits(!strcmp(childname, "job"));
 
    shepherd_trace("setting environment");
-   sge_set_environment();
+   sge_set_environment(strcmp(childname, "job") || ( is_qlogin && !g_new_interactive_job_support));
 
   /* Create the "error" and the "exit" status file here.
    * The "exit_status" file indicates that the son is started.
@@ -991,13 +992,60 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    return;
 }
 
+int is_dangerous_env(const char *name)
+{
+  if (strncmp(name, "LD_", 3) == 0)
+    return true;
+
+  if (strncmp(name, "PERL5LIB", 8) == 0)
+    return true;
+
+  if (strncmp(name, "PERLLIB", 7) == 0)
+    return true;
+
+  if (strncmp(name, "PERLOPT", 7) == 0)
+    return true;
+
+  if (strncmp(name, "PYTHONPATH", 10) == 0)
+    return true;
+
+  if (strncmp(name, "BASH_ENV", 8) == 0)
+    return true;
+
+#if   defined(AIX)
+  if (strncmp(name, "LIBPATH", 7) == 0)
+    return true;
+
+  if (strncmp(name, "LDR_PRELOAD", 11) == 0)
+    return true;
+
+#elif defined(DARWIN)
+  if (strncmp(name, "DYLD_", 5) == 0)
+    return true;
+
+#elif defined(HP11)
+  if (strncmp(name, "SHLIB_PATH", 10) == 0)
+    return true;
+
+#elif defined(LINUX)
+  if (strncmp(name, "MALLOC_TRACE", 12) == 0)
+    return true;
+
+#elif defined(IRIX) || defined(ALPHA)
+  if (strncmp(name, "_RLD_LIST", 9) == 0)
+    return true;
+#endif
+
+  return false;
+}
+
 /****** Shepherd/sge_set_environment() *****************************************
 *  NAME
 *     sge_set_environment () -- Read the environment from the "environment" file
 *     and store it in the appropriate environment, inherited or internal.
 *
 *  SYNOPSIS
-*      int sge_set_environment(void)
+*      int sge_set_environment(int)
 *
 *  FUNCTION
 *     This function reads the "environment" file written out by the execd and
@@ -1010,7 +1058,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 *  NOTES
 *      MT-NOTE: sge_set_environment() is not MT safe
 *******************************************************************************/
-int sge_set_environment()
+int sge_set_environment(int cleanenv)
 {
    const char *const filename = "environment";
    FILE *fp;
@@ -1048,7 +1096,7 @@ int sge_set_environment()
 
    while (fgets(buf, sizeof(buf), fp))
    {
-      char *name, *value;
+      char *name, *value, new_name[128];
       const char *new_value;
 
       line++;
@@ -1061,6 +1109,14 @@ int sge_set_environment()
       {
          FCLOSE(fp);
          shepherd_error(1, "error reading environment file: line=%d, contents:%s", line, buf);
+      }
+      else if (cleanenv)
+      {
+          if (is_dangerous_env(name))
+          {
+             snprintf(new_name, sizeof(new_name), "SGE_WRAP_%s", name);
+             name = new_name;
+          }
       }
 
       value = strtok(NULL, "\n");
@@ -1185,6 +1241,7 @@ int sge_set_env_value(const char *name, const char* value)
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
+
    if (inherit_env())
    {
       ret = sge_setenv(name, value);

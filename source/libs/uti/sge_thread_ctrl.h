@@ -45,7 +45,7 @@ typedef struct _thread_control_t {
    pthread_cond_t  cond_var;
 
    /* flag thats indicates that the shutdown process has already started */
-   bool shutdown_started;
+   bool volatile shutdown_started;
 } thread_control_t;
 
 extern thread_control_t Thread_Control;

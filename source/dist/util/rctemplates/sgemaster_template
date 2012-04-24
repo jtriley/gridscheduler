@@ -78,7 +78,7 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 # Required-Stop:
 # Default-Start:  3 5
 # Default-Stop: 0 1 2 6
-# Description:  start Grid Engine qmaster, schedd, shadowd
+# Description:  start Grid Engine qmaster, shadowd
 ### END INIT INFO
 #---------------------------------------------------------------------------
 
@@ -93,7 +93,7 @@ ARCH=`$SGE_ROOT/util/arch`
 
 # library path setting required only for architectures where RUNPATH is not supported
 case $ARCH in
-#ENFORCE_SHLIBPATH#sol*|lx*)
+#ENFORCE_SHLIBPATH#sol*|linux-*)
 #ENFORCE_SHLIBPATH#   ;;
 *)
    shlib_path_name=`$SGE_ROOT/util/arch -lib`

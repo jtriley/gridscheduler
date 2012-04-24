@@ -559,7 +559,8 @@ int _lGetPosInDescr(const lDescr *dp, int name)
 *  RESULT
 *     int - position or -1 if not found 
 ******************************************************************************/
-int lGetPosInDescr(const lDescr *dp, int name) {
+int lGetPosInDescr(const lDescr *dp, int name)
+{
    const lDescr *ldp;
 
    if (!dp) {

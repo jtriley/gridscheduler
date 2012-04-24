@@ -209,7 +209,7 @@ static void rmon_helper_key_destroy(void * ctx)
 int rmon_condition(int layer, int class)
 {
    int ret_val;
-#define MLGETL(s, i) ((s)->ml[i]) /* for the sake of speed */
+
    /*
     * NOTE:
     * 
@@ -218,18 +218,25 @@ int rmon_condition(int layer, int class)
     * at this point.
     */ 
 #ifdef DEBUG_CLIENT_SUPPORT
-   if ( mtype == RMON_NONE ) {
+   if (mtype == RMON_NONE)
+   {
       return 0;
    }
    
    /* if debug printing is on we use a lock for further layer checking */
    RMON_CONDITION_LOCK();
 #endif
+
+#define MLGETL(s, i) ((s)->ml[i]) /* for the sake of speed */
+
    ret_val = ((mtype != RMON_NONE) && (class & MLGETL(&RMON_DEBUG_ON, layer))) ? 1 : 0;
+
 #ifdef DEBUG_CLIENT_SUPPORT
    RMON_CONDITION_UNLOCK();
 #endif
+
    return ret_val;
+
 #undef MLGETL
 } /* rmon_condition() */
 

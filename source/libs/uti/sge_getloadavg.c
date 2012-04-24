@@ -132,7 +132,7 @@
 #  include <sys/sched.h>
 #  include <sys/param.h>
 #  include <sys/sysctl.h>
-#elif defined(AIX51)
+#elif defined(AIX)
 #  include <sys/sysinfo.h>
 #  include <nlist.h>
 

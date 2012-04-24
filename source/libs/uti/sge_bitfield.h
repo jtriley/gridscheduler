@@ -110,7 +110,7 @@ sge_bitfield_print(const bitfield *bf, FILE *fd);
 
 #define fixed_bits (sizeof(char *) * 8)
 #define sge_bitfield_get_size(bf) ((bf)->size)
-#define sge_bitfield_get_size_bytes(size) ((size) / 8 + (((size) % 8) > 0 ? 1 : 0))
+#define sge_bitfield_get_size_bytes(size) ((size+7) / 8)
 #define sge_bitfield_get_buffer(source) ((source)->size <= fixed_bits) ? (source)->bf.fix : (source)->bf.dyn
 
 #endif /* __SGE_BITFIELD_H */

@@ -38,6 +38,8 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "sge.h"
 #include "sge_time.h"
@@ -643,27 +645,56 @@ int sge_log(int log_level, const char *mesg, const char *file__, const char *fun
 static void sge_do_log(u_long32 me, const char* progname, const char* unqualified_hostname,
                        int aLevel, const char *aMessage) 
 {
-   int fd;
+   if (me == QMASTER || me == EXECD || me == SCHEDD || me == SHADOWD)
+   {
+      int fd, open_flags = O_WRONLY | O_APPEND | O_CREAT, first = 1;
+      const char *logfile = log_state_get_log_file();
 
-   if (me == QMASTER || me == EXECD || me == SCHEDD || me == SHADOWD) {
-      if ((fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666)) >= 0) {
+      #if   defined(O_NOFOLLOW)
+        open_flags |= O_NOFOLLOW;
+      #elif defined(O_EXCL)
+        open_flags |= O_EXCL;
+      #endif
+
+   again:
+      if ((fd = SGE_OPEN3(logfile, open_flags, 0666)) >= 0)
+      {
          char msg2log[4*MAX_STRING_SIZE];
          dstring msg;
-         
+
          sge_dstring_init(&msg, msg2log, sizeof(msg2log));
 
-         append_time((time_t)sge_get_gmt(), &msg, false); 
+         append_time((time_t)sge_get_gmt(), &msg, false);
 
-         sge_dstring_sprintf_append(&msg, "|%6.6s|%s|%c|%s\n",
-                 progname,
-                 unqualified_hostname,
-                 aLevel,
-                 aMessage);
+         sge_dstring_sprintf_append(&msg, "|%6.6s|%s|%c|%s\n", progname, unqualified_hostname, aLevel, aMessage);
 
          write(fd, msg2log, strlen(msg2log));
          close(fd);
       }
-   }   
+    #if   defined(O_NOFOLLOW)
+      else if (errno == ELOOP)
+      {
+         if (first && unlink(logfile) == 0)
+         {
+            first = 0;
+            goto again;
+         }
+      }
+    #elif defined(O_EXCL)
+      else if (errno == EEXIST)
+      {
+         struct stat buf;
+
+         if (first && lstat(logfile, &buf) == 0 && buf.st_uid == getuid())  /* our file?? */
+         {
+             first = 0;
+             open_flags = O_WRONLY | O_APPEND | O_CREAT;
+
+             goto again;
+         }
+      }
+    #endif
+   }
 
    return;
 } /* sge_do_log() */

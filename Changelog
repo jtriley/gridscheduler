@@ -5,9 +5,11 @@
 ################################################################################
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123456789
-RH-2012-04-23-1: Bugfix:      Fix buffer overflow in sgepasswd
+RH-2012-04-23-2:  Enhancem.   Enhance log file handling
 
-RH-2012-04-23-0: Bugfix:      Security fix - code injection via LD_*
+RH-2012-04-23-1:  Bugfix:     Fix buffer overflow in sgepasswd
+
+RH-2012-04-23-0:  Bugfix:     Security fix - code injection via LD_*
 
 RH-2012-04-15-0:  Bugfix:     file descriptors closed too soon in shepherd
                               (from Brooks Davis, with cleanup from Ron Chen)

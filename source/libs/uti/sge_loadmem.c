@@ -912,14 +912,22 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 #include <sys/param.h>
 #include <sys/sysctl.h>
 
+#if defined(VM_UVMEXP2)
+ #define SGE_VM_UVMEXP VM_UVMEXP2
+ typedef struct uvmexp_sysctl sge_uvmexp_t;
+#else
+ #define SGE_VM_UVMEXP VM_UVMEXP
+ typedef struct uvmexp        sge_uvmexp_t;
+#endif
+
 int sge_loadmem(sge_mem_info_t *mem_info)
 {
   int mib[2];
   size_t size;
-  struct uvmexp_sysctl uvmexp;
+  sge_uvmexp_t uvmexp;
 
   mib[0] = CTL_VM;
-  mib[1] = VM_UVMEXP2;
+  mib[1] = SGE_VM_UVMEXP;
   size   = sizeof(uvmexp);
 
   sysctl(mib, sizeof(mib)/sizeof(int), &uvmexp, &size, NULL, 0);

@@ -629,9 +629,10 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
          DTRACE;
 
          /* Queue must have free slots */
-         if (qinstance_slots_used(this_q) < lGetUlong(this_q, QU_job_slots)) {
-            lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, lGetString(gdil_ep, JG_qname),
-                                                          petep);
+         if (qinstance_slots_used(this_q) < lGetUlong(this_q, QU_job_slots))
+         {
+            lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, lGetString(gdil_ep, JG_qname), petep);
+
             DRETURN(jat_gdil); 
          } 
       }
@@ -737,6 +738,7 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
       if (gdil == NULL) {  /* also no already exited task found -> no way to start new task */
          ERROR((SGE_EVENT, MSG_JOB_NOFREEQ_USSS, sge_u32c(jobid), 
                 lGetString(petrep, PETR_owner), host, qualified_hostname));
+         lFreeElem(&petep);
          goto Error;
       }
    }
@@ -780,11 +782,13 @@ static int handle_task(sge_gdi_ctx_class_t *ctx, lListElem *petrep, char *commpr
       }
    }
 
+#if defined(EXECD_DEBUG)
    /* for debugging: never start job but report a failure */
    if (getenv("FAILURE_BEFORE_START"))
    {
       execd_job_start_failure(jep, jatep, petep, "FAILURE_BEFORE_START", 0);
-   }   
+   }
+#endif
 
    if (sge_make_pe_task_active_dir(jep, jatep, petep, NULL) == NULL)
    {

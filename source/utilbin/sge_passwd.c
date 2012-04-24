@@ -1049,7 +1049,7 @@ sge_passwd_show(const char *username)
 static void
 sge_passwd_add_change(const char *username, const char *domain, uid_t uid) 
 {
-   char user[128] = "";
+   char user[128+128] = ""; /* actually (128-1) + (1) + (128-1) + (1) */
    char **users = NULL;
    char **encryped_pwd = NULL;
    char err_str[MAX_STRING_SIZE];
@@ -1319,9 +1319,13 @@ int main(int argc, char *argv[])
          DEXIT;
          exit(1);
       } 
-      if (!strcmp(argv[1],"-D")) {
+      if (!strcmp(argv[1],"-D"))
+      {
          argc--; argv++;
-         if (argc != 1 && sscanf(argv[1], "%s", domain) == 1) {
+
+         if (argc != 1 && strncpy(domain, argv[1], sizeof(domain)) && domain[0] != '\0')
+         {
+            domain[sizeof(domain)-1] = '\0';
             argc--; argv++;
             continue;
          } else {
@@ -1330,7 +1334,8 @@ int main(int argc, char *argv[])
             exit(1);
          }
       }
-      if (!strcmp(argv[1],"-d")) {
+      if (!strcmp(argv[1],"-d"))
+      {
          uid_t uid = getuid();
 
          if (uid != 0) {
@@ -1340,7 +1345,11 @@ int main(int argc, char *argv[])
          }
 
          argc--; argv++;
-         if (argc != 1 && sscanf(argv[1], "%s", username) == 1) {
+
+         if (argc != 1 && strncpy(username, argv[1], sizeof(username)) && username[0] != '\0')
+         {
+            username[sizeof(username)-1] = '\0';
+
             argc--; argv++;
             do_delete = true;
             continue;
@@ -1349,9 +1358,13 @@ int main(int argc, char *argv[])
             DEXIT;
             exit(1);
          }
-      } 
-      if (argv[1][0] != '-' && sscanf(argv[1], "%s", username) == 1) {
+      }
+
+      if (argv[1][0] != '-' && strncpy(username, argv[1], sizeof(username)) && username[0] != '\0')
+      {
          uid_t uid = getuid();
+
+         username[sizeof(username)-1] = '\0';
 
          if (uid != 0) {
             fprintf(stderr, MSG_PWD_ONLY_USER_SS, SGE_PASSWD_PROG_NAME, username);

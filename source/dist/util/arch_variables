@@ -112,6 +112,21 @@ case $ARCH in
    RSH_DAEMON=undef
    LOADSENSOR_COMMAND=undef
    ;;
+ cygwin-x86)
+   AWK=/usr/bin/gawk
+   ECHO="/bin/echo -e"
+   RC_FILE=undef
+   RC_PREFIX=undef
+   RC_DIR=undef
+   XTERM=/usr/bin/X11/xterm
+   MAILER=/bin/mail
+   QLOGIN_COMMAND=undef
+   QLOGIN_DAEMON=undef
+   RLOGIN_DAEMON=undef
+   GETTEXT=/usr/bin/gettext
+   RSH_DAEMON=undef
+   LOADSENSOR_COMMAND=undef
+   ;;
  tru64)
    AWK=/usr/bin/nawk
    ECHO=/usr/bin/echo

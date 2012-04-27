@@ -104,8 +104,7 @@ extern volatile int jobs_to_start;
 extern lList *jr_list;
 
 #ifdef COMPILE_DC
-static void notify_ptf(void);
-static void notify_ptf()
+static void notify_ptf(void)
 {
    lListElem *jep, *tep;
    int write_job = -1;
@@ -355,7 +354,8 @@ execd_get_wallclock_limit(const char *qualified_hostname, lList *gdil_list, int 
 #define SIGNAL_RESEND_INTERVAL 1
 #define OLD_JOB_INTERVAL 60
 
-int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down) {
+int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down)
+{
    u_long32 now;
    static u_long next_pdc = 0;
    static u_long next_signal = 0;

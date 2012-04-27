@@ -42,7 +42,7 @@
 #include "uti/binding_api.h"
 
 #if defined(HWLOC)
-char *topology_api_name()
+char *topology_api_name(void)
 {
   return "hwloc";
 }
@@ -59,7 +59,7 @@ hwloc_topology_t hwloc_init(void)
    return topology;
 }
 
-bool has_topology_information()
+bool has_topology_information(void)
 {
   const struct hwloc_topology_support *support;
   hwloc_topology_t topology = hwloc_init();
@@ -75,7 +75,7 @@ bool has_topology_information()
     return 0;
 }
 
-bool has_core_binding()
+bool has_core_binding(void)
 {
   const struct hwloc_topology_support *support;
   hwloc_topology_t topology = hwloc_init();
@@ -91,7 +91,7 @@ bool has_core_binding()
     return 0;
 }
 
-int get_amount_of_sockets()
+int get_amount_of_sockets(void)
 {
    int num_sockets = 0;
    hwloc_topology_t topology = hwloc_init();
@@ -302,7 +302,7 @@ bool get_processor_ids(int socket_number, int core_number, int *proc_ids[], int 
 
 #if defined(PLPA)
 
-char *topology_api_name()
+char *topology_api_name(void)
 {
   return "PLPA";
 }
@@ -327,7 +327,7 @@ char *topology_api_name()
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-bool has_topology_information() 
+bool has_topology_information(void) 
 {
    int has_topology = 0;
    
@@ -362,7 +362,7 @@ bool has_topology_information()
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-bool has_core_binding() 
+bool has_core_binding(void)
 {
    
    /* checks if plpa is working */
@@ -400,7 +400,7 @@ bool has_core_binding()
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-int get_total_amount_of_cores() 
+int get_total_amount_of_cores(void)
 {
    /* total amount of cores currently active on this system */
    int total_amount_of_cores = 0;

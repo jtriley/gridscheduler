@@ -366,7 +366,7 @@ int do_ck_to_do(sge_gdi_ctx_class_t *ctx, bool is_qmaster_down)
    int return_value = 0;
    const char *qualified_hostname = ctx->get_qualified_hostname(ctx);
 
-   DENTER(TOP_LAYER, "execd_ck_to_do");
+   DENTER(TOP_LAYER, "do_ck_to_do");
 
    /*
     *  get current time (now)
@@ -820,8 +820,8 @@ static int exec_job_or_task(sge_gdi_ctx_class_t *ctx, lListElem *jep, lListElem 
 int register_at_ptf(
 lListElem *job,
 lListElem *ja_task,
-lListElem *pe_task 
-) {
+lListElem *pe_task) 
+{
    u_long32 job_id;   
    u_long32 ja_task_id;   
    const char *pe_task_id = NULL;

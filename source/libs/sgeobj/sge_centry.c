@@ -1170,7 +1170,7 @@ bool centry_elem_validate(lListElem *centry, lList *centry_list,
    }
 
 
-   /* check if its a build in value and if the type is correct */
+   /* check if it's a built-in value and if the type is correct */
    {
       int i; 
       int type = lGetUlong(centry, CE_valtype);
